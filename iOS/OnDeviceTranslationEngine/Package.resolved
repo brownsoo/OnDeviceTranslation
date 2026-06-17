@@ -1,0 +1,25 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "swift-argument-parser",
+        "repositoryURL": "https://github.com/apple/swift-argument-parser.git",
+        "state": {
+          "branch": null,
+          "revision": "6a52f3251125d74daf04fcbd5e6f08a75d074382",
+          "version": "1.8.2"
+        }
+      },
+      {
+        "package": "swift-sentencepiece",
+        "repositoryURL": "https://github.com/jkrukowski/swift-sentencepiece.git",
+        "state": {
+          "branch": null,
+          "revision": "36a8b2b45733f6adb3092100f16e4c7d38a10a7c",
+          "version": "0.0.6"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
