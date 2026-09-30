@@ -6,15 +6,15 @@ public class SentencePieceTokenizer {
     private let sourceIdToVocabId: [Int]
     private let targetVocabIdToPiece: [String]
     private let unkTokenId: Int
-    private let padTokenId: Int
-    private let eosTokenId: Int
+    let padTokenId: Int
+    let eosTokenId: Int
     
     public init(
         modelPath: String, 
         sourceMapURL: URL, 
         targetMapURL: URL, 
         unkTokenId: Int = 1, 
-        padTokenId: Int = 65001, 
+        padTokenId: Int = 65000, 
         eosTokenId: Int = 0
     ) throws {
         self.tokenizer = try SentencepieceTokenizer(modelPath: modelPath, tokenOffset: 0)

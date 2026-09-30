@@ -5,7 +5,6 @@ import coremltools as ct
 from transformers import MarianTokenizer
 
 def main():
-    model_name = "Helsinki-NLP/opus-mt-ko-en"
     tokenizer_dir = "./tokenizer_files"
     encoder_path = "./models/encoder.mlpackage"
     decoder_path = "./models/decoder.mlpackage"
@@ -51,11 +50,8 @@ def main():
     
     # 2. Autoregressive Decoder Loop (Greedy Search)
     print("Running Decoder Loop...")
-    # MarianMT uses tokenizer.pad_token_id (usually 65001) as the initial decoder token
-    decoder_input_ids = [model_name] # Wait, MarianTokenizer uses pad_token_id or config's decoder_start_token_id
-    # Let's find decoder_start_token_id:
-    # Usually it's pad_token_id, let's verify what the pad token id is.
-    pad_token_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else 65001
+    # MarianMT uses the PAD token (65000 in opus-mt-ko-en) as decoder_start_token_id
+    pad_token_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else 65000
     eos_token_id = tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 0
     
     # Start sequence with PAD token
@@ -74,8 +70,10 @@ def main():
         
         logits = decoder_outputs[decoder_output_key] # Shape: [1, vocab_size]
         
-        # Get token with highest probability (greedy)
-        next_token = int(np.argmax(logits[0]))
+        # Get token with highest probability (greedy); PAD is never generated (bad_words_ids in HF config)
+        next_logits = logits[0].copy()
+        next_logits[pad_token_id] = -np.inf
+        next_token = int(np.argmax(next_logits))
         dec_ids.append(next_token)
         
         # Stop if EOS is predicted

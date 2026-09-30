@@ -58,8 +58,10 @@ public class OnDeviceTranslationEngine {
         }
         
         // 3. Decoder Loop (Greedy Search)
-        var decIds = [Int32(65001)] // Start with PAD token (65001)
-        let eosTokenId = Int32(0)
+        // Marian uses the PAD token as decoder_start_token_id
+        let padTokenId = Int32(tokenizer.padTokenId)
+        let eosTokenId = Int32(tokenizer.eosTokenId)
+        var decIds = [padTokenId]
         
         for _ in 0..<maxLength {
             let decInputMultiArray = try toMultiArray(decIds)
@@ -76,8 +78,8 @@ public class OnDeviceTranslationEngine {
                 throw NSError(domain: "OnDeviceTranslation", code: 3, userInfo: [NSLocalizedDescriptionKey: "Failed to get decoder logits"])
             }
             
-            // ArgMax to find the next token
-            let nextToken = argmax(logits)
+            // ArgMax to find the next token (PAD is never generated, matching bad_words_ids in the HF config)
+            let nextToken = argmax(logits, excluding: padTokenId)
             decIds.append(Int32(nextToken))
             
             if nextToken == eosTokenId {
@@ -99,12 +101,12 @@ public class OnDeviceTranslationEngine {
         return multiArray
     }
     
-    private func argmax(_ multiArray: MLMultiArray) -> Int32 {
+    private func argmax(_ multiArray: MLMultiArray, excluding excludedIndex: Int32) -> Int32 {
         let count = multiArray.count
         var maxVal: Float = -Float.greatestFiniteMagnitude
         var maxIndex: Int32 = 0
         
-        for i in 0..<count {
+        for i in 0..<count where i != Int(excludedIndex) {
             let val = multiArray[i].floatValue
             if val > maxVal {
                 maxVal = val
