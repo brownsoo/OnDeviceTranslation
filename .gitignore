@@ -9,3 +9,9 @@ __pycache__/
 # Swift PM build files
 iOS/OnDeviceTranslationEngine/.build/
 iOS/OnDeviceTranslationEngine/.swiftpm/
+
+# iOS sample app
+iOS/OnDeviceTranslationSample/Pods/
+iOS/OnDeviceTranslationSample/build/
+iOS/OnDeviceTranslationSample/Configs/Local.xcconfig
+xcuserdata/

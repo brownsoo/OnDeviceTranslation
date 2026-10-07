@@ -1,0 +1,5 @@
+// Shared build settings. Signing values come from Local.xcconfig (not committed).
+APP_BUNDLE_ID = com.example.OnDeviceTranslationSample
+DEVELOPMENT_TEAM =
+
+#include? "Local.xcconfig"

@@ -1,0 +1,3 @@
+// Copy to Local.xcconfig and fill in your signing team and bundle id.
+DEVELOPMENT_TEAM = YOUR_TEAM_ID
+APP_BUNDLE_ID = com.yourcompany.OnDeviceTranslationSample
