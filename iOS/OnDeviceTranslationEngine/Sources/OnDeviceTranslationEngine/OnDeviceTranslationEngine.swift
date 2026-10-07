@@ -14,14 +14,15 @@ public class OnDeviceTranslationEngine {
         decoderModelURL: URL, 
         tokenizerModelPath: String, 
         sourceMapURL: URL, 
-        targetMapURL: URL
+        targetMapURL: URL,
+        configuration: MLModelConfiguration = MLModelConfiguration()
     ) throws {
         // Compile models dynamically if they are not already compiled (i.e. if they are .mlpackage or .mlmodel)
         let compiledEncoderURL = try Self.compileIfNeeded(at: encoderModelURL)
         let compiledDecoderURL = try Self.compileIfNeeded(at: decoderModelURL)
         
-        self.encoderModel = try MLModel(contentsOf: compiledEncoderURL)
-        self.decoderModel = try MLModel(contentsOf: compiledDecoderURL)
+        self.encoderModel = try MLModel(contentsOf: compiledEncoderURL, configuration: configuration)
+        self.decoderModel = try MLModel(contentsOf: compiledDecoderURL, configuration: configuration)
         
         self.tokenizer = try SentencePieceTokenizer(
             modelPath: tokenizerModelPath, 
