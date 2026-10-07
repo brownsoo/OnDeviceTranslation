@@ -17,7 +17,7 @@
 - iOS 26 이상에서는 Core ML · Apple · ML Kit 세 결과를 모두 비교한다. iOS 26 미만은 Core ML · ML Kit.
 - 언어팩은 별도 관리 화면 + 결과 카드 안내로 처리한다.
 - Xcode 프로젝트는 XcodeGen으로 생성한다.
-- 서명 팀: hyonsoo han (`TB576F3KJ6`), 번들 ID `com.brownsoo.OnDeviceTranslationSample`.
+- 서명 팀: 개인 팀 (`<TEAM_ID>`), 번들 ID `<번들 ID>`.
 
 ### 가정
 - 원문 언어는 한국어 고정.

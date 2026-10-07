@@ -19,12 +19,12 @@
 - ML Kit 의존성: `pod 'GoogleMLKit/Translate', '9.0.0'`. 다운로드 조건: 셀룰러 허용, 백그라운드 허용.
 - Core ML 엔진은 영어만 지원한다.
 - 상태 관리는 `ObservableObject` (iOS 15.5 지원을 위해 `@Observable` 사용 안 함).
-- 서명: `DEVELOPMENT_TEAM = TB576F3KJ6`, 번들 ID `com.brownsoo.OnDeviceTranslationSample` — 커밋하지 않는 `Configs/Local.xcconfig`에만 기록.
+- 서명: `DEVELOPMENT_TEAM = <TEAM_ID>`, 번들 ID `<번들 ID>` — 커밋하지 않는 `Configs/Local.xcconfig`에만 기록.
 - `OnDeviceTranslationEngine` SPM 패키지 소스는 수정하지 않는다.
 - UI 문구는 한국어.
 - 모든 앱 테스트는 연결된 iPhone 17 (iOS 27.0)에서 실행한다 (ML Kit 시뮬레이터 제약).
-  - xcodebuild destination: `platform=iOS,id=00008150-000E40492128C01C`
-  - devicectl device: `DA312C82-BD17-5691-B4EC-3DCA4E039104`
+  - xcodebuild destination: `platform=iOS,id=<기기 UDID>`
+  - devicectl device: `<기기 ID>`
 - 소스 파일을 추가/삭제한 뒤에는 반드시 `./generate.sh` (XcodeGen 재생성 + `pod install`)를 실행한다.
 
 ## Review Focus
@@ -150,8 +150,8 @@ APP_BUNDLE_ID = com.yourcompany.OnDeviceTranslationSample
 `Configs/Local.xcconfig` (gitignore 대상):
 
 ```
-DEVELOPMENT_TEAM = TB576F3KJ6
-APP_BUNDLE_ID = com.brownsoo.OnDeviceTranslationSample
+DEVELOPMENT_TEAM = <TEAM_ID>
+APP_BUNDLE_ID = <번들 ID>
 ```
 
 - [ ] **Step 5: project.yml 작성**
@@ -291,7 +291,7 @@ final class TargetLanguageTests: XCTestCase {
 Run:
 ```bash
 ./generate.sh
-xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=00008150-000E40492128C01C' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/TargetLanguageTests
+xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/TargetLanguageTests
 ```
 Expected: 컴파일 실패 — `cannot find 'TargetLanguage' in scope`
 
@@ -391,7 +391,7 @@ enum PackLanguage: String, CaseIterable, Identifiable {
 Run:
 ```bash
 ./generate.sh
-xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=00008150-000E40492128C01C' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/TargetLanguageTests
+xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/TargetLanguageTests
 ```
 Expected: `** TEST SUCCEEDED **` (3 tests)
 
@@ -399,7 +399,7 @@ Expected: `** TEST SUCCEEDED **` (3 tests)
 
 Run:
 ```bash
-xcodebuild build -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=00008150-000E40492128C01C' -derivedDataPath build -allowProvisioningUpdates -quiet
+xcodebuild build -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -derivedDataPath build -allowProvisioningUpdates -quiet
 ls build/Build/Products/Debug-iphoneos/OnDeviceTranslationSample.app | grep -E "coder|spm|json"
 ```
 Expected: `decoder.mlmodelc`, `encoder.mlmodelc`, `source.spm`, `source_id_to_vocab_id.json`, `target_vocab_id_to_piece.json`
@@ -421,8 +421,8 @@ Expected: `decoder.mlmodelc`, `encoder.mlmodelc`, `source.spm`, `source_id_to_vo
 
 Run:
 ```bash
-xcrun devicectl device install app --device DA312C82-BD17-5691-B4EC-3DCA4E039104 build/Build/Products/Debug-iphoneos/OnDeviceTranslationSample.app
-xcrun devicectl device process launch --device DA312C82-BD17-5691-B4EC-3DCA4E039104 com.brownsoo.OnDeviceTranslationSample
+xcrun devicectl device install app --device <기기 ID> build/Build/Products/Debug-iphoneos/OnDeviceTranslationSample.app
+xcrun devicectl device process launch --device <기기 ID> <번들 ID>
 ```
 Expected: 앱이 실행되고 "Engine Ready"가 표시되며 [Translate to English]로 영어 번역이 나온다. (기기 잠금 해제 필요. 처음 설치 시 기기에서 개발자 신뢰 설정이 필요할 수 있다.)
 
@@ -568,7 +568,7 @@ final class ProviderTests: XCTestCase {
 Run:
 ```bash
 ./generate.sh
-xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=00008150-000E40492128C01C' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/ProviderTests
+xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/ProviderTests
 ```
 Expected: 컴파일 실패 — `cannot find type 'TranslationProvider' in scope`
 
@@ -678,7 +678,7 @@ enum CoreMLProviderError: LocalizedError {
 Run:
 ```bash
 ./generate.sh
-xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=00008150-000E40492128C01C' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/ProviderTests
+xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/ProviderTests
 ```
 Expected: `** TEST SUCCEEDED **` (4 tests)
 
@@ -830,7 +830,7 @@ final class ComparisonViewModelTests: XCTestCase {
 Run:
 ```bash
 ./generate.sh
-xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=00008150-000E40492128C01C' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/ComparisonViewModelTests
+xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/ComparisonViewModelTests
 ```
 Expected: 컴파일 실패 — `cannot find type 'CardState' in scope`
 
@@ -994,7 +994,7 @@ final class ComparisonViewModel: ObservableObject {
 Run:
 ```bash
 ./generate.sh
-xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=00008150-000E40492128C01C' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/ComparisonViewModelTests
+xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/ComparisonViewModelTests
 ```
 Expected: `** TEST SUCCEEDED **` (9 tests)
 
@@ -1071,7 +1071,7 @@ final class MLKitMappingTests: XCTestCase {
 Run:
 ```bash
 ./generate.sh
-xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=00008150-000E40492128C01C' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/MLKitMappingTests
+xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/MLKitMappingTests
 ```
 Expected: 컴파일 실패 — `value of type 'PackLanguage' has no member 'mlKitLanguage'`
 
@@ -1238,7 +1238,7 @@ final class AppleProvider: TranslationProvider {
 Run:
 ```bash
 ./generate.sh
-xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=00008150-000E40492128C01C' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/MLKitMappingTests
+xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/MLKitMappingTests
 ```
 Expected: `** TEST SUCCEEDED **` (5 tests)
 
@@ -1429,7 +1429,7 @@ final class LanguagePackStoreTests: XCTestCase {
 Run:
 ```bash
 ./generate.sh
-xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=00008150-000E40492128C01C' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/LanguagePackStoreTests
+xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/LanguagePackStoreTests
 ```
 Expected: 컴파일 실패 — `cannot find 'LanguagePackStore' in scope`
 
@@ -1590,7 +1590,7 @@ final class LanguagePackStore: ObservableObject {
 Run:
 ```bash
 ./generate.sh
-xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=00008150-000E40492128C01C' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/LanguagePackStoreTests
+xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -allowProvisioningUpdates -quiet -only-testing:OnDeviceTranslationSampleTests/LanguagePackStoreTests
 ```
 Expected: `** TEST SUCCEEDED **` (8 tests)
 
@@ -1776,7 +1776,7 @@ struct LanguagePacksView: View {
 Run:
 ```bash
 ./generate.sh
-xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=00008150-000E40492128C01C' -allowProvisioningUpdates -quiet
+xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -allowProvisioningUpdates -quiet
 ```
 Expected: `** TEST SUCCEEDED **` (Task 1~5 테스트 전부)
 
@@ -2032,7 +2032,7 @@ Run: `git rm iOS/OnDeviceTranslationSample/Sources/ContentView.swift`
 Run:
 ```bash
 ./generate.sh
-xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=00008150-000E40492128C01C' -allowProvisioningUpdates -quiet
+xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -allowProvisioningUpdates -quiet
 ```
 Expected: `** TEST SUCCEEDED **`
 
@@ -2040,9 +2040,9 @@ Expected: `** TEST SUCCEEDED **`
 
 Run:
 ```bash
-xcodebuild build -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=00008150-000E40492128C01C' -derivedDataPath build -allowProvisioningUpdates -quiet
-xcrun devicectl device install app --device DA312C82-BD17-5691-B4EC-3DCA4E039104 build/Build/Products/Debug-iphoneos/OnDeviceTranslationSample.app
-xcrun devicectl device process launch --device DA312C82-BD17-5691-B4EC-3DCA4E039104 com.brownsoo.OnDeviceTranslationSample
+xcodebuild build -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -derivedDataPath build -allowProvisioningUpdates -quiet
+xcrun devicectl device install app --device <기기 ID> build/Build/Products/Debug-iphoneos/OnDeviceTranslationSample.app
+xcrun devicectl device process launch --device <기기 ID> <번들 ID>
 ```
 
 기기(iOS 27)에서 확인 (mobile-mcp 도구로 조작하거나, 시스템 동의 시트는 사용자에게 탭을 요청):
@@ -2133,7 +2133,7 @@ xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDevic
 Run:
 ```bash
 cd iOS/OnDeviceTranslationSample
-xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=00008150-000E40492128C01C' -allowProvisioningUpdates -quiet
+xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -allowProvisioningUpdates -quiet
 cd ../OnDeviceTranslationEngine && swift test 2>&1 | grep -E "Executed .* tests"
 ```
 Expected: 앱 `** TEST SUCCEEDED **`, 엔진 `Executed 2 tests, with 0 failures`
