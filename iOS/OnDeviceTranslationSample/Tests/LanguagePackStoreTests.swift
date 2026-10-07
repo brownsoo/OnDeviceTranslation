@@ -100,12 +100,14 @@ final class LanguagePackStoreTests: XCTestCase {
         XCTAssertEqual(store.appleStatus(.japanese), .notInstalled)
 
         store.requestDownload(.apple, for: .japanese)
-        store.requestAppleDownload(.vietnamese)
-        XCTAssertEqual(store.appleDownloadRequest?.target, .japanese)
+        store.requestAppleDownload(.vietnamese, origin: .languagePacks)
+        let request = store.appleDownloadRequest
+        XCTAssertEqual(request?.target, .japanese)
+        XCTAssertEqual(request?.origin, .comparison)
         XCTAssertTrue(store.isDownloading(.apple, .japanese))
 
         apple.status = .installed
-        await store.appleDownloadDidFinish(error: nil)
+        await store.appleDownloadDidFinish(requestID: request!.id, error: nil)
         XCTAssertNil(store.appleDownloadRequest)
         XCTAssertNil(store.appleDownloadError)
         XCTAssertEqual(store.appleStatus(.japanese), .installed)
@@ -113,11 +115,34 @@ final class LanguagePackStoreTests: XCTestCase {
 
     func test_appleDownloadFailure_isReported() async {
         let store = makeStore(apple: FakeProvider(kind: .apple, status: .notInstalled))
-        store.requestAppleDownload(.japanese)
+        store.requestAppleDownload(.japanese, origin: .languagePacks)
 
-        await store.appleDownloadDidFinish(error: FakeError())
+        await store.appleDownloadDidFinish(requestID: store.appleDownloadRequest!.id, error: FakeError())
 
         XCTAssertNil(store.appleDownloadRequest)
         XCTAssertEqual(store.appleDownloadError, "fake failure")
+    }
+
+    func test_appleDownloadFinish_forStaleRequestIsIgnored() async {
+        let store = makeStore(apple: FakeProvider(kind: .apple, status: .notInstalled))
+        store.requestAppleDownload(.japanese, origin: .languagePacks)
+        let first = store.appleDownloadRequest!.id
+        await store.appleDownloadDidFinish(requestID: first, error: nil)
+        store.requestAppleDownload(.vietnamese, origin: .comparison)
+
+        await store.appleDownloadDidFinish(requestID: first, error: FakeError())
+
+        XCTAssertEqual(store.appleDownloadRequest?.target, .vietnamese)
+        XCTAssertNil(store.appleDownloadError)
+    }
+
+    func test_appleDownloadCancelled_clearsRequestWithoutError() async {
+        let store = makeStore(apple: FakeProvider(kind: .apple, status: .notInstalled))
+        store.requestAppleDownload(.japanese, origin: .languagePacks)
+
+        await store.appleDownloadDidFinish(requestID: store.appleDownloadRequest!.id, error: CancellationError())
+
+        XCTAssertNil(store.appleDownloadRequest)
+        XCTAssertNil(store.appleDownloadError)
     }
 }

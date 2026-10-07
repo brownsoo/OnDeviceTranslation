@@ -29,7 +29,7 @@ struct LanguagePacksView: View {
         }
         .navigationViewStyle(.stack)
         .task { await store.refresh() }
-        .modifier(AppleDownloadHost(store: store, isActive: true))
+        .modifier(AppleDownloadHost(store: store, origin: .languagePacks))
     }
 
     private func row(for language: PackLanguage) -> some View {
@@ -42,7 +42,7 @@ struct LanguagePacksView: View {
                     if let target = language.targetLanguage {
                         PackStatusControl(
                             status: store.isDownloading(.apple, target) ? .downloading : store.appleStatus(target),
-                            onDownload: { store.requestAppleDownload(target) }
+                            onDownload: { store.requestAppleDownload(target, origin: .languagePacks) }
                         )
                     } else {
                         // Apple language packs are per pair (Korean → target), shown on the target rows.

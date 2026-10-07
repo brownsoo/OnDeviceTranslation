@@ -2,15 +2,14 @@ import SwiftUI
 import Translation
 
 /// Shows Apple's language download prompt for `LanguagePackStore.appleDownloadRequest`.
-/// Only one host may be active at a time: the comparison screen deactivates its host
-/// while the language pack sheet (which has its own host) is presented.
+/// Each screen has its own host; only the host matching the request's origin runs it.
 struct AppleDownloadHost: ViewModifier {
     @ObservedObject var store: LanguagePackStore
-    let isActive: Bool
+    let origin: AppleDownloadOrigin
 
     func body(content: Content) -> some View {
         if #available(iOS 26.0, *) {
-            content.modifier(AppleDownloadTask(store: store, isActive: isActive))
+            content.modifier(AppleDownloadTask(store: store, origin: origin))
         } else {
             content
         }
@@ -20,22 +19,23 @@ struct AppleDownloadHost: ViewModifier {
 @available(iOS 26.0, *)
 private struct AppleDownloadTask: ViewModifier {
     @ObservedObject var store: LanguagePackStore
-    let isActive: Bool
+    let origin: AppleDownloadOrigin
 
     func body(content: Content) -> some View {
         content.translationTask(configuration) { session in
+            guard let requestID = await store.appleDownloadRequest?.id else { return }
             do {
                 try await session.prepareTranslation()
-                await store.appleDownloadDidFinish(error: nil)
+                await store.appleDownloadDidFinish(requestID: requestID, error: nil)
             } catch {
-                await store.appleDownloadDidFinish(error: error)
+                await store.appleDownloadDidFinish(requestID: requestID, error: error)
             }
         }
     }
 
     /// A new non-nil configuration triggers the task; it returns to nil when the request finishes.
     private var configuration: TranslationSession.Configuration? {
-        guard isActive, let request = store.appleDownloadRequest else { return nil }
+        guard let request = store.appleDownloadRequest, request.origin == origin else { return nil }
         return TranslationSession.Configuration(source: AppleProvider.source, target: AppleProvider.language(for: request.target))
     }
 }

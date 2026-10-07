@@ -1,9 +1,17 @@
 import Foundation
 import MLKitTranslate
 
+/// The screen whose `AppleDownloadHost` owns a request. The owner keeps running the prompt
+/// even while the other screen is shown, so opening or closing the sheet never restarts it.
+enum AppleDownloadOrigin: Equatable {
+    case comparison
+    case languagePacks
+}
+
 struct AppleDownloadRequest: Equatable {
     let id = UUID()
     let target: TargetLanguage
+    let origin: AppleDownloadOrigin
 }
 
 /// Language pack status for every engine, shared by the comparison and language pack screens.
@@ -106,23 +114,26 @@ final class LanguagePackStore: ObservableObject {
             downloadMLKit(.korean)
             downloadMLKit(target.packLanguage)
         case .apple:
-            requestAppleDownload(target)
+            requestAppleDownload(target, origin: .comparison)
         case .coreML:
             break
         }
     }
 
     /// Asks `AppleDownloadHost` to show the system download prompt. One request at a time.
-    func requestAppleDownload(_ target: TargetLanguage) {
+    func requestAppleDownload(_ target: TargetLanguage, origin: AppleDownloadOrigin) {
         guard isAppleAvailable, appleDownloadRequest == nil else { return }
         appleDownloadError = nil
-        appleDownloadRequest = AppleDownloadRequest(target: target)
+        appleDownloadRequest = AppleDownloadRequest(target: target, origin: origin)
         revision += 1
     }
 
-    func appleDownloadDidFinish(error: Error?) async {
+    /// Completion of the prompt for `requestID`. Results for an older request are ignored, and a
+    /// cancellation (the owning screen went away) clears the request without reporting an error.
+    func appleDownloadDidFinish(requestID: UUID, error: Error?) async {
+        guard appleDownloadRequest?.id == requestID else { return }
         appleDownloadRequest = nil
-        appleDownloadError = error?.localizedDescription
+        appleDownloadError = error is CancellationError ? nil : error?.localizedDescription
         await refresh()
     }
 

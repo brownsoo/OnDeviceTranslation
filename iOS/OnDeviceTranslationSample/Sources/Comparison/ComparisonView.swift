@@ -74,8 +74,7 @@ struct ComparisonView: View {
         .onChange(of: packStore.revision) { _ in
             Task { await viewModel.refreshStatuses() }
         }
-        // The language pack sheet hosts its own prompt while it is shown.
-        .modifier(AppleDownloadHost(store: packStore, isActive: !showingLanguagePacks))
+        .modifier(AppleDownloadHost(store: packStore, origin: .comparison))
     }
 
     private var targetBinding: Binding<TargetLanguage> {
