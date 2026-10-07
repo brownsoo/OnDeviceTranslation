@@ -17,25 +17,25 @@ final class ComparisonViewModelTests: XCTestCase {
     }
 
     func test_translate_fillsResultForEachProvider() async {
-        let coreML = FakeProvider(kind: .coreML, result: .success("A"))
+        let apple = FakeProvider(kind: .apple, result: .success("A"))
         let mlKit = FakeProvider(kind: .mlKit, result: .success("B"))
-        let viewModel = ComparisonViewModel(providers: [coreML, mlKit], inputText: "안녕하세요")
+        let viewModel = ComparisonViewModel(providers: [apple, mlKit], inputText: "안녕하세요")
 
         await viewModel.translate()?.value
 
-        XCTAssertEqual(resultText(viewModel.state(for: .coreML)), "A")
+        XCTAssertEqual(resultText(viewModel.state(for: .apple)), "A")
         XCTAssertEqual(resultText(viewModel.state(for: .mlKit)), "B")
     }
 
     func test_translate_marksUnsupportedWithoutCallingProvider() async {
-        let coreML = FakeProvider(kind: .coreML, supportedTargets: [.english])
-        let viewModel = ComparisonViewModel(providers: [coreML], inputText: "안녕하세요")
+        let apple = FakeProvider(kind: .apple, supportedTargets: [.english])
+        let viewModel = ComparisonViewModel(providers: [apple], inputText: "안녕하세요")
         await viewModel.select(.japanese).value
 
         await viewModel.translate()?.value
 
-        XCTAssertEqual(viewModel.state(for: .coreML), .unsupported)
-        XCTAssertEqual(coreML.translateCallCount, 0)
+        XCTAssertEqual(viewModel.state(for: .apple), .unsupported)
+        XCTAssertEqual(apple.translateCallCount, 0)
     }
 
     func test_translate_needsDownloadWhenPackMissing() async {
@@ -49,24 +49,24 @@ final class ComparisonViewModelTests: XCTestCase {
     }
 
     func test_translate_oneFailureDoesNotAffectOthers() async {
-        let coreML = FakeProvider(kind: .coreML, result: .failure(FakeError()))
+        let apple = FakeProvider(kind: .apple, result: .failure(FakeError()))
         let mlKit = FakeProvider(kind: .mlKit, result: .success("B"))
-        let viewModel = ComparisonViewModel(providers: [coreML, mlKit], inputText: "안녕하세요")
+        let viewModel = ComparisonViewModel(providers: [apple, mlKit], inputText: "안녕하세요")
 
         await viewModel.translate()?.value
 
-        XCTAssertEqual(viewModel.state(for: .coreML), .error("fake failure"))
+        XCTAssertEqual(viewModel.state(for: .apple), .error("fake failure"))
         XCTAssertEqual(resultText(viewModel.state(for: .mlKit)), "B")
     }
 
     func test_translate_whitespaceOnlyInput_doesNothing() {
-        let coreML = FakeProvider(kind: .coreML)
-        let viewModel = ComparisonViewModel(providers: [coreML], inputText: "  \n\t ")
+        let apple = FakeProvider(kind: .apple)
+        let viewModel = ComparisonViewModel(providers: [apple], inputText: "  \n\t ")
 
         XCTAssertFalse(viewModel.canTranslate)
         XCTAssertNil(viewModel.translate())
-        XCTAssertEqual(coreML.translateCallCount, 0)
-        XCTAssertEqual(viewModel.state(for: .coreML), .idle)
+        XCTAssertEqual(apple.translateCallCount, 0)
+        XCTAssertEqual(viewModel.state(for: .apple), .idle)
     }
 
     func test_selectDuringTranslation_discardsStaleResult() async {

@@ -21,7 +21,7 @@ struct AppDependencies {
             }
         }
 
-        var byKind: [ProviderKind: TranslationProvider] = [.coreML: CoreMLProvider(), .mlKit: mlKit]
+        var byKind: [ProviderKind: TranslationProvider] = [.mlKit: mlKit]
         for provider in apple {
             byKind[provider.kind] = provider
         }

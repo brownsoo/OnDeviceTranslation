@@ -1,15 +1,6 @@
 # macOS files
 .DS_Store
 
-# Python virtual environment and cache
-venv/
-__pycache__/
-*.pyc
-
-# Swift PM build files
-iOS/OnDeviceTranslationEngine/.build/
-iOS/OnDeviceTranslationEngine/.swiftpm/
-
 # iOS sample app
 iOS/OnDeviceTranslationSample/Pods/
 iOS/OnDeviceTranslationSample/build/

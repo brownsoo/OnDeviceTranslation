@@ -69,8 +69,6 @@ final class LanguagePackStore: ObservableObject {
             return mlKitStatus(.korean) == .downloading || mlKitStatus(target.packLanguage) == .downloading
         case .apple, .appleIntelligence, .appleStandard:
             return appleDownloadRequest?.kind == kind && appleDownloadRequest?.target == target
-        case .coreML:
-            return false
         }
     }
 
@@ -124,8 +122,6 @@ final class LanguagePackStore: ObservableObject {
             downloadMLKit(target.packLanguage)
         case .apple, .appleIntelligence, .appleStandard:
             requestAppleDownload(kind, target, origin: .comparison)
-        case .coreML:
-            break
         }
     }
 

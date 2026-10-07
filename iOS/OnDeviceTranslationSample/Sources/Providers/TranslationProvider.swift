@@ -1,7 +1,6 @@
 import Foundation
 
 enum ProviderKind: String, CaseIterable {
-    case coreML
     /// Apple Translation with the system-chosen model (iOS 26.0–26.3).
     case apple
     /// Apple Translation with the Apple Intelligence model (iOS 26.4+, `.highFidelity`).
@@ -13,16 +12,16 @@ enum ProviderKind: String, CaseIterable {
     var isApple: Bool {
         switch self {
         case .apple, .appleIntelligence, .appleStandard: return true
-        case .coreML, .mlKit: return false
+        case .mlKit: return false
         }
     }
 
     /// Engines shown on this device.
     static func available(apple: AppleTranslationSupport) -> [ProviderKind] {
         switch apple {
-        case .none: return [.coreML, .mlKit]
-        case .basic: return [.coreML, .apple, .mlKit]
-        case .strategies: return [.coreML, .appleIntelligence, .appleStandard, .mlKit]
+        case .none: return [.mlKit]
+        case .basic: return [.apple, .mlKit]
+        case .strategies: return [.appleIntelligence, .appleStandard, .mlKit]
         }
     }
 }
