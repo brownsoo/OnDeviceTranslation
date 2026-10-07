@@ -2,12 +2,44 @@ import Foundation
 
 enum ProviderKind: String, CaseIterable {
     case coreML
+    /// Apple Translation with the system-chosen model (iOS 26.0–26.3).
     case apple
+    /// Apple Translation with the Apple Intelligence model (iOS 26.4+, `.highFidelity`).
+    case appleIntelligence
+    /// Apple Translation with the downloadable standard model (iOS 26.4+, `.lowLatency`).
+    case appleStandard
     case mlKit
 
-    /// Engines shown on this device. Apple Translation is used only on iOS 26+.
-    static func available(isAppleAvailable: Bool) -> [ProviderKind] {
-        isAppleAvailable ? [.coreML, .apple, .mlKit] : [.coreML, .mlKit]
+    var isApple: Bool {
+        switch self {
+        case .apple, .appleIntelligence, .appleStandard: return true
+        case .coreML, .mlKit: return false
+        }
+    }
+
+    /// Engines shown on this device.
+    static func available(apple: AppleTranslationSupport) -> [ProviderKind] {
+        switch apple {
+        case .none: return [.coreML, .mlKit]
+        case .basic: return [.coreML, .apple, .mlKit]
+        case .strategies: return [.coreML, .appleIntelligence, .appleStandard, .mlKit]
+        }
+    }
+}
+
+/// How much of Apple's Translation framework this OS offers.
+enum AppleTranslationSupport {
+    /// Before iOS 26: no installed-language sessions.
+    case none
+    /// iOS 26.0–26.3: one system-chosen model.
+    case basic
+    /// iOS 26.4+: the model can be chosen per session (`TranslationSession.Strategy`).
+    case strategies
+
+    static var current: AppleTranslationSupport {
+        if #available(iOS 26.4, *) { return .strategies }
+        if #available(iOS 26.0, *) { return .basic }
+        return .none
     }
 }
 

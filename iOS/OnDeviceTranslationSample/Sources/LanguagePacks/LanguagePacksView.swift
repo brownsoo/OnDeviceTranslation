@@ -35,19 +35,20 @@ struct LanguagePacksView: View {
     private func row(for language: PackLanguage) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(language.displayName).font(.headline)
-            if store.isAppleAvailable {
+            if let target = language.targetLanguage {
+                ForEach(store.appleKinds, id: \.self) { kind in
+                    HStack {
+                        Text(store.appleProvider(kind)?.displayName ?? "Apple").font(.caption).foregroundColor(.secondary)
+                        Spacer()
+                        appleControl(kind, target)
+                    }
+                }
+            } else if store.isAppleAvailable {
                 HStack {
                     Text("Apple").font(.caption).foregroundColor(.secondary)
                     Spacer()
-                    if let target = language.targetLanguage {
-                        PackStatusControl(
-                            status: store.isDownloading(.apple, target) ? .downloading : store.appleStatus(target),
-                            onDownload: { store.requestAppleDownload(target, origin: .languagePacks) }
-                        )
-                    } else {
-                        // Apple language packs are per pair (Korean → target), shown on the target rows.
-                        Text("—").foregroundColor(.secondary)
-                    }
+                    // Apple language packs are per pair (Korean → target), shown on the target rows.
+                    Text("—").foregroundColor(.secondary)
                 }
             }
             HStack {
@@ -62,6 +63,17 @@ struct LanguagePacksView: View {
         }
         .buttonStyle(.borderless) // keep each button tappable on its own inside a List row
         .padding(.vertical, 4)
+    }
+
+    @ViewBuilder
+    private func appleControl(_ kind: ProviderKind, _ target: TargetLanguage) -> some View {
+        let status = store.isDownloading(kind, target) ? .downloading : store.appleStatus(kind, target)
+        if kind == .appleIntelligence && status == .installed {
+            // The Apple Intelligence model ships with Apple Intelligence; there is nothing to download.
+            Text("Apple Intelligence에 포함").foregroundColor(.secondary)
+        } else {
+            PackStatusControl(status: status, onDownload: { store.requestAppleDownload(kind, target, origin: .languagePacks) })
+        }
     }
 
     private var footerText: String {

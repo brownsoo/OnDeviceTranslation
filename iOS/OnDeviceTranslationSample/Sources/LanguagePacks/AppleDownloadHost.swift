@@ -35,7 +35,8 @@ private struct AppleDownloadTask: ViewModifier {
 
     /// A new non-nil configuration triggers the task; it returns to nil when the request finishes.
     private var configuration: TranslationSession.Configuration? {
-        guard let request = store.appleDownloadRequest, request.origin == origin else { return nil }
-        return TranslationSession.Configuration(source: AppleProvider.source, target: AppleProvider.language(for: request.target))
+        guard let request = store.appleDownloadRequest, request.origin == origin,
+              let provider = store.appleProvider(request.kind) as? AppleProvider else { return nil }
+        return provider.downloadConfiguration(for: request.target)
     }
 }

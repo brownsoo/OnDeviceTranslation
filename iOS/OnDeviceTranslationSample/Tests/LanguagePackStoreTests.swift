@@ -13,7 +13,7 @@ final class LanguagePackStoreTests: XCTestCase {
         center = NotificationCenter()
     }
 
-    private func makeStore(apple: TranslationProvider? = nil) -> LanguagePackStore {
+    private func makeStore(apple: [TranslationProvider] = []) -> LanguagePackStore {
         LanguagePackStore(mlKit: mlKit, apple: apple, notificationCenter: center)
     }
 
@@ -94,13 +94,13 @@ final class LanguagePackStoreTests: XCTestCase {
 
     func test_appleDownloadRequest_isSingleAndClearedOnFinish() async {
         let apple = FakeProvider(kind: .apple, status: .notInstalled)
-        let store = makeStore(apple: apple)
+        let store = makeStore(apple: [apple])
         await store.refresh()
         XCTAssertTrue(store.isAppleAvailable)
-        XCTAssertEqual(store.appleStatus(.japanese), .notInstalled)
+        XCTAssertEqual(store.appleStatus(.apple, .japanese), .notInstalled)
 
         store.requestDownload(.apple, for: .japanese)
-        store.requestAppleDownload(.vietnamese, origin: .languagePacks)
+        store.requestAppleDownload(.apple, .vietnamese, origin: .languagePacks)
         let request = store.appleDownloadRequest
         XCTAssertEqual(request?.target, .japanese)
         XCTAssertEqual(request?.origin, .comparison)
@@ -110,12 +110,12 @@ final class LanguagePackStoreTests: XCTestCase {
         await store.appleDownloadDidFinish(requestID: request!.id, error: nil)
         XCTAssertNil(store.appleDownloadRequest)
         XCTAssertNil(store.appleDownloadError)
-        XCTAssertEqual(store.appleStatus(.japanese), .installed)
+        XCTAssertEqual(store.appleStatus(.apple, .japanese), .installed)
     }
 
     func test_appleDownloadFailure_isReported() async {
-        let store = makeStore(apple: FakeProvider(kind: .apple, status: .notInstalled))
-        store.requestAppleDownload(.japanese, origin: .languagePacks)
+        let store = makeStore(apple: [FakeProvider(kind: .apple, status: .notInstalled)])
+        store.requestAppleDownload(.apple, .japanese, origin: .languagePacks)
 
         await store.appleDownloadDidFinish(requestID: store.appleDownloadRequest!.id, error: FakeError())
 
@@ -124,11 +124,11 @@ final class LanguagePackStoreTests: XCTestCase {
     }
 
     func test_appleDownloadFinish_forStaleRequestIsIgnored() async {
-        let store = makeStore(apple: FakeProvider(kind: .apple, status: .notInstalled))
-        store.requestAppleDownload(.japanese, origin: .languagePacks)
+        let store = makeStore(apple: [FakeProvider(kind: .apple, status: .notInstalled)])
+        store.requestAppleDownload(.apple, .japanese, origin: .languagePacks)
         let first = store.appleDownloadRequest!.id
         await store.appleDownloadDidFinish(requestID: first, error: nil)
-        store.requestAppleDownload(.vietnamese, origin: .comparison)
+        store.requestAppleDownload(.apple, .vietnamese, origin: .comparison)
 
         await store.appleDownloadDidFinish(requestID: first, error: FakeError())
 
@@ -137,12 +137,32 @@ final class LanguagePackStoreTests: XCTestCase {
     }
 
     func test_appleDownloadCancelled_clearsRequestWithoutError() async {
-        let store = makeStore(apple: FakeProvider(kind: .apple, status: .notInstalled))
-        store.requestAppleDownload(.japanese, origin: .languagePacks)
+        let store = makeStore(apple: [FakeProvider(kind: .apple, status: .notInstalled)])
+        store.requestAppleDownload(.apple, .japanese, origin: .languagePacks)
 
         await store.appleDownloadDidFinish(requestID: store.appleDownloadRequest!.id, error: CancellationError())
 
         XCTAssertNil(store.appleDownloadRequest)
         XCTAssertNil(store.appleDownloadError)
+    }
+
+    func test_multipleAppleProviders_trackStatusAndRequestsPerKind() async {
+        let intelligence = FakeProvider(kind: .appleIntelligence, status: .installed)
+        let standard = FakeProvider(kind: .appleStandard, status: .notInstalled)
+        let store = makeStore(apple: [intelligence, standard])
+        await store.refresh()
+
+        XCTAssertEqual(store.appleKinds, [.appleIntelligence, .appleStandard])
+        XCTAssertEqual(store.appleStatus(.appleIntelligence, .japanese), .installed)
+        XCTAssertEqual(store.appleStatus(.appleStandard, .japanese), .notInstalled)
+
+        store.requestDownload(.appleStandard, for: .japanese)
+        store.requestDownload(.appleIntelligence, for: .japanese)
+
+        XCTAssertEqual(store.appleDownloadRequest?.kind, .appleStandard)
+        XCTAssertEqual(store.appleDownloadRequest?.origin, .comparison)
+        XCTAssertTrue(store.isDownloading(.appleStandard, .japanese))
+        XCTAssertFalse(store.isDownloading(.appleIntelligence, .japanese))
+        XCTAssertFalse(store.isDownloading(.appleStandard, .vietnamese))
     }
 }

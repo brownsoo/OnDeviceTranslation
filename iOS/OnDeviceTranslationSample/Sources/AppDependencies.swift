@@ -10,14 +10,21 @@ struct AppDependencies {
 
     static func make() -> AppDependencies {
         let mlKit = MLKitProvider()
-        var apple: TranslationProvider?
+        let support = AppleTranslationSupport.current
+        var apple: [TranslationProvider] = []
         if #available(iOS 26.0, *) {
-            apple = AppleProvider()
+            switch support {
+            case .none: break
+            case .basic: apple = [AppleProvider(mode: .systemDefault)]
+            case .strategies: apple = [AppleProvider(mode: .highFidelity), AppleProvider(mode: .lowLatency)]
+            }
         }
 
         var byKind: [ProviderKind: TranslationProvider] = [.coreML: CoreMLProvider(), .mlKit: mlKit]
-        byKind[.apple] = apple
-        let providers = ProviderKind.available(isAppleAvailable: apple != nil).compactMap { byKind[$0] }
+        for provider in apple {
+            byKind[provider.kind] = provider
+        }
+        let providers = ProviderKind.available(apple: support).compactMap { byKind[$0] }
 
         return AppDependencies(
             viewModel: ComparisonViewModel(providers: providers, inputText: sampleText),

@@ -10,6 +10,8 @@ enum AppleDownloadOrigin: Equatable {
 
 struct AppleDownloadRequest: Equatable {
     let id = UUID()
+    /// The Apple engine (model) whose language is requested.
+    let kind: ProviderKind
     let target: TargetLanguage
     let origin: AppleDownloadOrigin
 }
@@ -18,19 +20,22 @@ struct AppleDownloadRequest: Equatable {
 @MainActor
 final class LanguagePackStore: ObservableObject {
     @Published private(set) var mlKitStatuses: [PackLanguage: LanguagePackStatus] = [:]
-    @Published private(set) var appleStatuses: [TargetLanguage: LanguagePackStatus] = [:]
+    @Published private(set) var appleStatuses: [ProviderKind: [TargetLanguage: LanguagePackStatus]] = [:]
     @Published private(set) var appleDownloadRequest: AppleDownloadRequest?
     @Published private(set) var appleDownloadError: String?
     /// Bumped whenever any status changes so the comparison screen can re-check its cards.
     @Published private(set) var revision = 0
 
     private let mlKit: MLKitPackManaging
-    private let apple: TranslationProvider?
+    private let apple: [TranslationProvider]
     private var observers: [NSObjectProtocol] = []
 
-    var isAppleAvailable: Bool { apple != nil }
+    var isAppleAvailable: Bool { !apple.isEmpty }
 
-    init(mlKit: MLKitPackManaging, apple: TranslationProvider?, notificationCenter: NotificationCenter = .default) {
+    /// Apple engines in display order.
+    var appleKinds: [ProviderKind] { apple.map(\.kind) }
+
+    init(mlKit: MLKitPackManaging, apple: [TranslationProvider], notificationCenter: NotificationCenter = .default) {
         self.mlKit = mlKit
         self.apple = apple
         observers = [
@@ -50,16 +55,20 @@ final class LanguagePackStore: ObservableObject {
         mlKitStatuses[language] ?? .notInstalled
     }
 
-    func appleStatus(_ target: TargetLanguage) -> LanguagePackStatus {
-        appleStatuses[target] ?? .notInstalled
+    func appleStatus(_ kind: ProviderKind, _ target: TargetLanguage) -> LanguagePackStatus {
+        appleStatuses[kind]?[target] ?? .notInstalled
+    }
+
+    func appleProvider(_ kind: ProviderKind) -> TranslationProvider? {
+        apple.first { $0.kind == kind }
     }
 
     func isDownloading(_ kind: ProviderKind, _ target: TargetLanguage) -> Bool {
         switch kind {
         case .mlKit:
             return mlKitStatus(.korean) == .downloading || mlKitStatus(target.packLanguage) == .downloading
-        case .apple:
-            return appleDownloadRequest?.target == target
+        case .apple, .appleIntelligence, .appleStandard:
+            return appleDownloadRequest?.kind == kind && appleDownloadRequest?.target == target
         case .coreML:
             return false
         }
@@ -77,9 +86,9 @@ final class LanguagePackStore: ObservableObject {
                 mlKitStatuses[language] = .notInstalled
             }
         }
-        if let apple = apple {
+        for provider in apple {
             for target in TargetLanguage.allCases {
-                appleStatuses[target] = await apple.packStatus(for: target)
+                appleStatuses[provider.kind, default: [:]][target] = await provider.packStatus(for: target)
             }
         }
         revision += 1
@@ -113,18 +122,18 @@ final class LanguagePackStore: ObservableObject {
         case .mlKit:
             downloadMLKit(.korean)
             downloadMLKit(target.packLanguage)
-        case .apple:
-            requestAppleDownload(target, origin: .comparison)
+        case .apple, .appleIntelligence, .appleStandard:
+            requestAppleDownload(kind, target, origin: .comparison)
         case .coreML:
             break
         }
     }
 
     /// Asks `AppleDownloadHost` to show the system download prompt. One request at a time.
-    func requestAppleDownload(_ target: TargetLanguage, origin: AppleDownloadOrigin) {
-        guard isAppleAvailable, appleDownloadRequest == nil else { return }
+    func requestAppleDownload(_ kind: ProviderKind, _ target: TargetLanguage, origin: AppleDownloadOrigin) {
+        guard appleProvider(kind) != nil, appleDownloadRequest == nil else { return }
         appleDownloadError = nil
-        appleDownloadRequest = AppleDownloadRequest(target: target, origin: origin)
+        appleDownloadRequest = AppleDownloadRequest(kind: kind, target: target, origin: origin)
         revision += 1
     }
 
