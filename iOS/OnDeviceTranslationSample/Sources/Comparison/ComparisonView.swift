@@ -3,16 +3,28 @@ import SwiftUI
 struct ComparisonView: View {
     @ObservedObject var viewModel: ComparisonViewModel
     @ObservedObject var packStore: LanguagePackStore
-    @State private var showingLanguagePacks = false
+    @ObservedObject var sampleStore: SampleTextStore
+    @State private var activeSheet: Sheet?
+
+    private enum Sheet: String, Identifiable {
+        case languagePacks
+        case samples
+
+        var id: String { rawValue }
+    }
 
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("한국어 (원문)")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.secondary)
+                    HStack {
+                        Text("한국어 (원문)")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        sampleMenu
+                    }
                     TextEditor(text: $viewModel.inputText)
                         .frame(height: 120)
                         .padding(8)
@@ -59,11 +71,14 @@ struct ComparisonView: View {
             .navigationTitle("On-Device Translator")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("언어팩") { showingLanguagePacks = true }
+                    Button("언어팩") { activeSheet = .languagePacks }
                 }
             }
-            .sheet(isPresented: $showingLanguagePacks) {
-                LanguagePacksView(store: packStore)
+            .sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .languagePacks: LanguagePacksView(store: packStore)
+                case .samples: SampleTextsView(store: sampleStore)
+                }
             }
         }
         .navigationViewStyle(.stack)
@@ -75,6 +90,27 @@ struct ComparisonView: View {
             Task { await viewModel.refreshStatuses() }
         }
         .modifier(AppleDownloadHost(store: packStore, origin: .comparison))
+    }
+
+    private var sampleMenu: some View {
+        Menu {
+            ForEach(SampleCategory.allCases) { category in
+                Section(category.displayName) {
+                    ForEach(sampleStore.samples(in: category)) { sample in
+                        Button(sample.title) { viewModel.loadSample(sample) }
+                    }
+                }
+            }
+            Divider()
+            Button {
+                activeSheet = .samples
+            } label: {
+                Label("예시글 편집…", systemImage: "pencil")
+            }
+        } label: {
+            Label("예시글", systemImage: "text.badge.plus")
+                .font(.caption)
+        }
     }
 
     private var targetBinding: Binding<TargetLanguage> {

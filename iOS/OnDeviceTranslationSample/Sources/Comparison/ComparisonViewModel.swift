@@ -24,6 +24,10 @@ final class ComparisonViewModel: ObservableObject {
         !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    func loadSample(_ sample: SampleText) {
+        inputText = sample.body
+    }
+
     func state(for kind: ProviderKind) -> CardState {
         cards[kind] ?? .idle
     }

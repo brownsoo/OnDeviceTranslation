@@ -5,6 +5,7 @@ import Foundation
 struct AppDependencies {
     let viewModel: ComparisonViewModel
     let packStore: LanguagePackStore
+    let sampleStore: SampleTextStore
 
     static let sampleText = "안녕하세요. 오늘 날씨가 아주 좋네요. 만나서 반갑습니다."
 
@@ -28,7 +29,8 @@ struct AppDependencies {
 
         return AppDependencies(
             viewModel: ComparisonViewModel(providers: providers, inputText: sampleText),
-            packStore: LanguagePackStore(mlKit: mlKit, apple: apple)
+            packStore: LanguagePackStore(mlKit: mlKit, apple: apple),
+            sampleStore: SampleTextStore()
         )
     }
 }
