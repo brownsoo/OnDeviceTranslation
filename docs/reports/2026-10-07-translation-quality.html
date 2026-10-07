@@ -1,0 +1,2753 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온디바이스 번역 품질 비교</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single reading column, summary tables first, per-sample evidence below in disclosure blocks */
+:root{
+  --bg:#f6f7f5; --surface:#ffffff; --ink:#1d2421; --muted:#5d6762; --line:#dde2de; --accent:#2f6b57;
+  --good:#2f7a4f; --good-bg:#e3f1e8; --warn:#9a6a12; --warn-bg:#f8eed6; --bad:#a83a32; --bad-bg:#f8e2df;
+  --display:"IBM Plex Sans KR","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  --body:"Noto Sans KR","Apple SD Gothic Neo","Hiragino Sans","PingFang SC",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141917; --surface:#1c2320; --ink:#e4e9e6; --muted:#9aa59f; --line:#2c3531; --accent:#7cc3a6;
+  --good:#7fd19f; --good-bg:#1d3527; --warn:#e2b860; --warn-bg:#3a2f17; --bad:#f08f86; --bad-bg:#3d1f1c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141917; --surface:#1c2320; --ink:#e4e9e6; --muted:#9aa59f; --line:#2c3531; --accent:#7cc3a6;
+  --good:#7fd19f; --good-bg:#1d3527; --warn:#e2b860; --warn-bg:#3a2f17; --bad:#f08f86; --bad-bg:#3d1f1c; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.65}
+.wrap{max-width:980px;margin:0 auto;padding-inline:20px;padding-block:40px 64px;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.3}
+h1{font-size:2rem;font-weight:700}
+h2{font-size:1.3rem;font-weight:600;padding-bottom:8px;border-bottom:1px solid var(--line)}
+h3{font-size:1.05rem;font-weight:600}
+p{margin:0;max-width:68ch}
+.lede{color:var(--muted)}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+section{display:flex;flex-direction:column;gap:16px;min-width:0}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{font-family:var(--display);font-weight:600;font-size:.85rem;color:var(--muted);white-space:nowrap}
+td.sc{font-family:var(--mono);font-weight:500;text-align:center;width:120px}
+td.num{font-family:var(--mono);text-align:right}
+.good{color:var(--good);background:var(--good-bg)} .warn{color:var(--warn);background:var(--warn-bg)} .bad{color:var(--bad);background:var(--bad-bg)}
+.findings{display:flex;flex-direction:column;gap:12px;margin:0;padding-left:1.2em}
+.findings li{max-width:72ch}
+.findings b{font-family:var(--display)}
+.note{font-size:.85rem;color:var(--muted)}
+details{border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+summary{cursor:pointer;padding:12px 16px;font-family:var(--display);font-weight:600;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+summary .cat{font-family:var(--mono);font-size:.75rem;color:var(--accent);letter-spacing:.06em}
+.body{padding:0 16px 16px;display:flex;flex-direction:column;gap:20px}
+pre.src{white-space:pre-wrap;font-family:var(--body);font-size:.9rem;background:var(--bg);padding:12px;border-radius:4px;margin:0;max-height:16em;overflow:auto}
+.lang{display:flex;flex-direction:column;gap:8px}
+.trio{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.trio{grid-template-columns:1fr}}
+.tr{border:1px solid var(--line);border-radius:4px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.tr header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-family:var(--display);font-size:.85rem;font-weight:600}
+.pill{font-family:var(--mono);font-size:.8rem;padding:1px 8px;border-radius:999px}
+.tr .text{white-space:pre-wrap;font-size:.85rem;max-height:14em;overflow:auto;overflow-wrap:anywhere}
+.tr .err{font-size:.8rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px}
+.meta{font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+<div class="wrap">
+<header style="display:flex;flex-direction:column;gap:12px">
+<span class="eyebrow">예시글 6 × 언어 5 × 엔진 4 = 120건 · 온디바이스 3종(iPhone 17, iOS 27) + 구글 번역 웹</span>
+<h1>온디바이스 번역 품질 비교</h1>
+<p class="lede">앱에 등록한 학교 예시글(가정통신문·급식·학교공지 각 2개)을 온디바이스 엔진 3종(Apple Intelligence, Apple 기본 모델, ML Kit)과 비교 기준인 구글 번역 웹(클라우드)으로 영어·베트남어·인도네시아어·일본어·중국어(간체)에 번역하고, 원문과 대조해 오류를 세어 점수를 매겼습니다.</p>
+</header>
+<section><h2>측정 방법</h2>
+<p>MQM 방식으로 번역마다 오류를 찾아 경중을 나누고 <b>100 − (경미 1 + 주요 5 + 치명 10)</b>점으로 계산했습니다(최저 0). 경미는 어색한 표현·띄어쓰기, 주요는 뜻이 달라지거나 깨진 단어·목록 기호 직역·줄바꿈 소실, 치명은 <b>알레르기 항목 오역</b>·학교명이나 날짜·시간처럼 잘못 전달되면 행동이 달라지는 오류입니다.</p>
+<p class="note">구글 번역은 translate.google.com 웹에서 같은 원문을 입력해 얻은 결과입니다(2026-10-07). 클라우드 서비스라 온디바이스 엔진과 같은 조건의 비교가 아니며, 번역 시간은 측정하지 않았습니다.</p>
+<p class="note">평가자는 한 명(Claude)이고 정답 번역 없이 원문과 대조했습니다. 점수는 엔진 간 상대 비교용이며, 서비스 결정 전에는 언어별 원어민 검수가 필요합니다. 표본도 예시글 6개로 작습니다.</p>
+</section>
+<section><h2>요약</h2><div class="tbl"><table><thead><tr><th>구분</th><th>Apple Intelligence</th><th>Apple 기본 모델</th><th>ML Kit</th><th>Google 번역 (클라우드)</th></tr></thead><tbody>
+<tr><td><b>전체 평균</b></td><td class="sc warn">76</td><td class="sc warn">84</td><td class="sc bad">52</td><td class="sc good">98</td></tr>
+<tr><td>가정통신문</td><td class="sc good">95</td><td class="sc good">92</td><td class="sc warn">70</td><td class="sc good">98</td></tr>
+<tr><td>급식</td><td class="sc bad">38</td><td class="sc bad">70</td><td class="sc bad">30</td><td class="sc good">96</td></tr>
+<tr><td>학교공지</td><td class="sc good">93</td><td class="sc good">90</td><td class="sc bad">56</td><td class="sc good">98</td></tr>
+<tr><td>영어</td><td class="sc warn">84</td><td class="sc warn">83</td><td class="sc bad">59</td><td class="sc good">98</td></tr>
+<tr><td>베트남어</td><td class="sc bad">70</td><td class="sc warn">80</td><td class="sc bad">53</td><td class="sc good">96</td></tr>
+<tr><td>인도네시아어</td><td class="sc bad">68</td><td class="sc warn">82</td><td class="sc bad">50</td><td class="sc good">98</td></tr>
+<tr><td>일본어</td><td class="sc bad">69</td><td class="sc warn">84</td><td class="sc bad">46</td><td class="sc good">99</td></tr>
+<tr><td>중국어(간체)</td><td class="sc warn">87</td><td class="sc good">90</td><td class="sc bad">52</td><td class="sc good">98</td></tr>
+<tr><td>번역 시간 (평균 / 최대)</td><td class="num">5.82s / 14.0s</td><td class="num">0.95s / 2.0s</td><td class="num">0.20s / 0.4s</td><td class="num">측정 안 함</td></tr>
+</tbody></table></div><p class="note">점수 색: 90 이상 녹색, 70~89 노랑, 70 미만 빨강. Apple Intelligence의 첫 번역에는 모델 로딩 시간이 포함됩니다.</p></section>
+<section><h2>주요 발견</h2><ol class="findings">
+<li><b>구글 번역(클라우드)이 모든 분류와 언어에서 가장 좋았습니다(평균 약 97점).</b> 알레르기 19개 항목을 모든 언어에서 정확히 옮겼고, 목록 기호 "가.·나."를 "a.·b."(일본어는 "ア.·イ.")로, 요일 "(금)"을 "Fri"로 바르게 바꿨습니다. 남은 오류는 베트남어 급식 메뉴 일부와 학교 이름의 한자 추정 표기 정도입니다. 온디바이스 엔진 중 가장 나은 Apple 기본 모델과도 평균 10점 이상 차이가 납니다.</li>
+<li><b>문장형 글(가정통신문·학교공지)은 Apple Intelligence가 가장 좋고 Apple 기본 모델이 근소하게 뒤따릅니다.</b> ML Kit은 줄바꿈을 모두 없애고, 학교 이름을 일반 단어로 옮기며(영만→"Only", 용와→"and"), "18:00까지"를 "18:00부터"로 뒤집는 등 실제 안내에 쓰기 어렵습니다.</li>
+<li><b>급식 알레르기 정보는 온디바이스 세 엔진 모두 신뢰할 수 없습니다.</b> "1.난류(달걀)"는 온디바이스 세 엔진의 모든 언어에서 "Turbulence/乱流(난기류)" 등으로 오역됐습니다. Apple Intelligence는 베트남어·인도네시아어·일본어에서 고등어→연어·멸치, 게↔새우, 호두→아몬드, 잣→참깨처럼 알레르기 항목을 6~7개씩 다른 식재료로 바꿨습니다. 알레르기 표기는 번역기에 맡기지 말고 언어별로 미리 번역해 둔 고정 표(1~19번)로 바꿔 넣어야 합니다.</li>
+<li><b>급식처럼 짧은 단어 목록에서는 Apple 기본 모델이 가장 안정적입니다.</b> Apple Intelligence는 문맥이 없는 메뉴 이름을 그럴듯한 다른 음식으로 지어내는 경향이 있고, 기본 모델은 음역하거나 직역해 틀리더라도 엉뚱한 재료를 만들어내지는 않았습니다.</li>
+<li><b>Apple 두 모델 모두 한국식 목록 기호 "가.·나.·다."를 단어로 번역합니다.</b> "나."→"Me./私。", "마."→"Mẹ ơi(엄마)", "바."→"Bar/吧" 같은 결과가 반복됩니다. 번역 전에 "1. 2. 3."으로 바꾸는 전처리로 해결할 수 있습니다.</li>
+<li><b>Apple 기본 모델은 괄호 속 요일 약자를 단어로 오역합니다.</b> "(금)"→"Gold/金", "(수)"→"Number/数". 날짜를 "(금요일)"처럼 풀어 쓰거나 숫자 형식으로 바꾸면 피할 수 있습니다.</li>
+<li><b>속도는 ML Kit(0.2초) ≪ Apple 기본 모델(약 1초) ≪ Apple Intelligence(약 6초, 최대 14초)</b> 순입니다.</li>
+</ol></section>
+<section id="preprocessing"><h2>전처리 효과</h2><p>번역 전에 목록 기호 "가.·나."를 "A.·B."로, 요일 "(금)"을 "(금요일)"로 바꾸고, 급식의 알레르기 정보는 번역기에 넣지 않고 미리 번역해 둔 언어별 고정 문구로 바꿔 넣은 뒤 온디바이스 3종으로 다시 번역했습니다. 구글 번역은 다시 돌리지 않았습니다.</p>
+<div class="tbl"><table><thead><tr><th>구분</th><th>Apple Intelligence</th><th>Apple 기본 모델</th><th>ML Kit</th><th>Google 번역 (참고)</th></tr></thead><tbody>
+<tr><td><b>전체 평균</b></td><td class="num">75.5 → <b>91.1</b> <span class="meta">(+15.6)</span></td><td class="num">83.8 → <b>93.6</b> <span class="meta">(+9.7)</span></td><td class="num">52.2 → <b>65.8</b> <span class="meta">(+13.6)</span></td><td class="num">97.7</td></tr>
+<tr><td>가정통신문</td><td class="num">95.3 → <b>97.8</b> <span class="meta">(+2.5)</span></td><td class="num">91.8 → <b>95.9</b> <span class="meta">(+4.1)</span></td><td class="num">70.2 → <b>69.6</b> <span class="meta">(-0.6)</span></td><td class="num">98.4</td></tr>
+<tr><td>급식</td><td class="num">38.1 → <b>79.8</b> <span class="meta">(+41.7)</span></td><td class="num">69.6 → <b>90.8</b> <span class="meta">(+21.2)</span></td><td class="num">30.0 → <b>72.5</b> <span class="meta">(+42.5)</span></td><td class="num">96.4</td></tr>
+<tr><td>학교공지</td><td class="num">93.1 → <b>95.6</b> <span class="meta">(+2.5)</span></td><td class="num">90.1 → <b>94.0</b> <span class="meta">(+3.9)</span></td><td class="num">56.5 → <b>55.3</b> <span class="meta">(-1.2)</span></td><td class="num">98.4</td></tr>
+</tbody></table></div>
+<ol class="findings">
+<li><b>급식 점수가 가장 많이 올랐습니다.</b> 알레르기 표를 고정 문구로 바꾸면서 "난류→난기류" 같은 치명 오류가 모두 사라졌습니다. Apple 기본 모델은 급식에서 구글 번역에 가까워졌습니다.</li>
+<li><b>Apple Intelligence의 급식 메뉴 오역은 그대로 남았습니다.</b> 문어→오징어, 바지락→새우, 오리→닭처럼 메뉴 속 식재료를 다른 것으로 바꾸는 문제는 전처리로 막을 수 없습니다. 메뉴 이름 뒤 숫자(알레르기 번호)는 맞아도 음식 이름이 틀리면 의미가 없으므로, 급식 메뉴는 Apple Intelligence를 쓰지 않는 편이 안전합니다.</li>
+<li><b>목록 기호와 요일 오역은 Apple Intelligence에서 거의 사라졌습니다.</b> Apple 기본 모델은 베트남어·인도네시아어에서 "A."를 "Một(하나)", "I."를 "Tôi/Saya(나)"로 옮기는 새 문제가 생겼습니다. 기호를 "1) 2)" 같은 숫자 형식으로 바꾸면 더 줄일 수 있을 것으로 보입니다.</li>
+<li><b>ML Kit은 거의 개선되지 않았습니다.</b> 학교명 손실, 날짜 깨짐, 줄바꿈 소실 같은 핵심 오류가 전처리와 무관해서, ML Kit은 가정통신문 번역에 쓰기 어렵다는 결론은 그대로입니다.</li>
+</ol>
+<div class="tbl"><table><thead><tr><th>예시글</th><th>언어</th><th>Apple Intelligence</th><th>Apple 기본 모델</th><th>ML Kit</th></tr></thead><tbody>
+<tr><td rowspan="5"><span class="meta">가정통신문</span><br>초등 고학년 과학 체험교육 안내</td><td>영어</td><td class="sc good">97</td><td class="sc good">94</td><td class="sc warn">80</td></tr>
+<tr><td>베트남어</td><td class="sc good">97</td><td class="sc warn">89</td><td class="sc warn">80</td></tr>
+<tr><td>인도네시아어</td><td class="sc good">98</td><td class="sc good">94</td><td class="sc warn">80</td></tr>
+<tr><td>일본어</td><td class="sc good">99</td><td class="sc good">98</td><td class="sc warn">74</td></tr>
+<tr><td>중국어(간체)</td><td class="sc good">99</td><td class="sc good">99</td><td class="sc warn">79</td></tr>
+<tr><td rowspan="5"><span class="meta">가정통신문</span><br>AI·디지털 꿈 놀이터 행사 안내</td><td>영어</td><td class="sc good">98</td><td class="sc good">98</td><td class="sc warn">70</td></tr>
+<tr><td>베트남어</td><td class="sc good">94</td><td class="sc good">94</td><td class="sc bad">65</td></tr>
+<tr><td>인도네시아어</td><td class="sc good">99</td><td class="sc good">98</td><td class="sc bad">58</td></tr>
+<tr><td>일본어</td><td class="sc good">99</td><td class="sc good">97</td><td class="sc bad">55</td></tr>
+<tr><td>중국어(간체)</td><td class="sc good">98</td><td class="sc good">98</td><td class="sc bad">55</td></tr>
+<tr><td rowspan="5"><span class="meta">급식</span><br>10월 7일 (수) 급식</td><td>영어</td><td class="sc good">92</td><td class="sc good">90</td><td class="sc warn">75</td></tr>
+<tr><td>베트남어</td><td class="sc warn">75</td><td class="sc good">90</td><td class="sc warn">70</td></tr>
+<tr><td>인도네시아어</td><td class="sc warn">79</td><td class="sc good">90</td><td class="sc warn">75</td></tr>
+<tr><td>일본어</td><td class="sc warn">79</td><td class="sc good">94</td><td class="sc warn">75</td></tr>
+<tr><td>중국어(간체)</td><td class="sc good">98</td><td class="sc good">95</td><td class="sc warn">75</td></tr>
+<tr><td rowspan="5"><span class="meta">급식</span><br>10월 6일 (화) 급식</td><td>영어</td><td class="sc warn">73</td><td class="sc warn">89</td><td class="sc warn">75</td></tr>
+<tr><td>베트남어</td><td class="sc bad">69</td><td class="sc warn">89</td><td class="sc warn">70</td></tr>
+<tr><td>인도네시아어</td><td class="sc warn">70</td><td class="sc warn">89</td><td class="sc warn">70</td></tr>
+<tr><td>일본어</td><td class="sc warn">84</td><td class="sc warn">89</td><td class="sc warn">70</td></tr>
+<tr><td>중국어(간체)</td><td class="sc warn">79</td><td class="sc good">93</td><td class="sc warn">70</td></tr>
+<tr><td rowspan="5"><span class="meta">학교공지</span><br>학교도서관 정기도서 구입 예정 목록</td><td>영어</td><td class="sc good">94</td><td class="sc good">98</td><td class="sc warn">78</td></tr>
+<tr><td>베트남어</td><td class="sc good">94</td><td class="sc good">98</td><td class="sc warn">70</td></tr>
+<tr><td>인도네시아어</td><td class="sc good">95</td><td class="sc good">99</td><td class="sc warn">70</td></tr>
+<tr><td>일본어</td><td class="sc good">99</td><td class="sc good">97</td><td class="sc bad">65</td></tr>
+<tr><td>중국어(간체)</td><td class="sc good">99</td><td class="sc good">98</td><td class="sc warn">72</td></tr>
+<tr><td rowspan="5"><span class="meta">학교공지</span><br>청소년 로보틱스 챌린지 참가 안내</td><td>영어</td><td class="sc good">99</td><td class="sc warn">89</td><td class="sc bad">48</td></tr>
+<tr><td>베트남어</td><td class="sc good">93</td><td class="sc warn">80</td><td class="sc bad">40</td></tr>
+<tr><td>인도네시아어</td><td class="sc good">90</td><td class="sc warn">85</td><td class="sc bad">40</td></tr>
+<tr><td>일본어</td><td class="sc good">94</td><td class="sc good">98</td><td class="sc bad">30</td></tr>
+<tr><td>중국어(간체)</td><td class="sc good">99</td><td class="sc good">98</td><td class="sc bad">40</td></tr>
+</tbody></table></div>
+<details id="pre-home-letter-science-experience"><summary><span class="cat">가정통신문 · 전처리 후</span>초등 고학년 과학 체험교육 안내</summary><div class="body">
+<div class="lang"><h3>영어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">97</span></header><div class="text">Jeonju Education Support Office is conducting education where elementary school students (grades 4–6) and their parents learn, create, and experience the principles of science in everyday life together, so we kindly ask interested parents to apply in large numbers. (Multiple applications are possible)
+
+1. 10. 17.(Saturday) Education
+
+2. 10. 31.(Saturday) Education
+
+Applications can be made from the Jeonju Parents Education &gt; Education Application menu on the Jeonju Education Support Office website.</div><div class="err">변화 없음 · 4.2s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">94</span></header><div class="text">The Jeonju Education Support Office conducts education for elementary school children (4th to 6th grade) and parents to learn and experience the principles of science in their daily lives, so please apply if you are interested. (Dreplicate application is possible)
+
+1. 10. 17.( Saturday) Education
+
+2. 10. 31.( Saturday) Education
+
+You can apply from the Jeonju Parent Education &gt; Education Application menu on the Jeonju Education Support Office website.</div><div class="err">&#x27;(Saturday)&#x27;로 요일 정상, &#x27;Dreplicate&#x27;는 남음 · 0.5s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">80</span></header><div class="text">In the Jeonju Education Support Agency, elementary school students (4 to 6th grade) Children and parents will learn and experience the principles of science in their daily life, and apply for many of the parents of interest. (Availability) 1. 10. 17. (Saturday) Education 2. 10. 31. (Saturday) Education application can be done in the Jeonju Department of Parent Training&gt; Educational Applications in the Jeonju Education Support Office.</div><div class="err">변화 없음 (줄바꿈 소실, 신청 문장 오역) · 0.1s</div></article>
+</div></div>
+<div class="lang"><h3>베트남어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">97</span></header><div class="text">Trường học hỗ trợ giáo dục Jeonju đang tổ chức chương trình giáo dục cho học sinh tiểu học (lớp 4~6) và phụ huynh cùng nhau học hỏi, thực hành và trải nghiệm các nguyên lý khoa học trong cuộc sống hàng ngày, vì vậy mong nhận được nhiều đơn đăng ký từ các phụ huynh quan tâm. (Có thể đăng ký trùng lặp)
+
+1. 17/10 (Thứ Bảy) Giáo dục
+
+2. 31/10 (Thứ Bảy) Giáo dục
+
+Bạn có thể nộp đơn đăng ký tại mục Giáo dục phụ huynh Jeonju &gt; Đăng ký giáo dục trên trang web của Sở Giáo dục và Hỗ trợ Giáo dục Jeonju.</div><div class="err">변화 없음 · 3.4s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">89</span></header><div class="text">Văn phòng Hỗ trợ Giáo dục Jeonju tiến hành giáo dục cho trẻ em tiểu học (thiểu học đến lớp 4) và phụ huynh để học và trải nghiệm các nguyên tắc khoa học trong cuộc sống hàng ngày của họ, vì vậy hãy đăng ký nếu bạn quan tâm. (Có thể áp dụng Driplicate)
+
+1. 10. 17. ( Thứ Bảy) Giáo dục
+
+2. 10. 31. ( Thứ Bảy) Giáo dục
+
+Bạn có thể đăng ký từ menu Giáo dục Phụ huynh Jeonju &gt; Đơn đăng ký Giáo dục trên trang web Văn phòng Hỗ trợ Giáo dục Jeonju.</div><div class="err">요일 정상, &#x27;4학년까지&#x27; 오역은 남음 · 1.0s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">80</span></header><div class="text">Trong Cơ quan hỗ trợ giáo dục Jeonju, học sinh tiểu học (lớp 4 đến 6) trẻ em và phụ huynh sẽ học hỏi và trải nghiệm các nguyên tắc của khoa học trong cuộc sống hàng ngày của họ và áp dụng cho nhiều phụ huynh quan tâm. (Tính khả dụng) 1. 10. 17. (Thứ Bảy) Giáo dục 2. 10. 31. Ứng dụng giáo dục (thứ bảy) có thể được thực hiện trong Bộ Đào tạo Phụ huynh Jeonju&gt; Ứng dụng giáo dục trong Văn phòng Hỗ trợ Giáo dục Jeonju.</div><div class="err">변화 없음 · 0.3s</div></article>
+</div></div>
+<div class="lang"><h3>인도네시아어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">98</span></header><div class="text">Kantor Dukungan Pendidikan Jeonju mengadakan program pendidikan di mana anak-anak siswa SD (kelas 4-6) dan orang tua bersama-sama mempelajari, menerapkan, dan mengalami prinsip-prinsip sains dalam kehidupan sehari-hari. Kami sangat mengharapkan banyak pendaftaran dari orang tua yang berminat. (Pendaftaran ganda diperbolehkan)
+
+1. 17.10. (Sabtu) Pendidikan
+
+2. 31.10. (Sabtu) Pendidikan
+
+Pendaftaran dapat dilakukan melalui menu Pendidikan Orang Tua Jeonju &gt; Pendaftaran Pendidikan di situs web Dinas Pendidikan dan Dukungan Jeonju.</div><div class="err">변화 없음 · 3.8s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">94</span></header><div class="text">Kantor Dukungan Pendidikan Jeonju melakukan pendidikan untuk anak-anak sekolah dasar (kelas 4 hingga 6) dan orang tua untuk mempelajari dan mengalami prinsip-prinsip sains dalam kehidupan sehari-hari mereka, jadi silakan mendaftar jika Anda tertarik. (Aplikasi driplicate dimungkinkan)
+
+1. 10. 17. ( Sabtu) Pendidikan
+
+2. 10. 31. ( Sabtu) Pendidikan
+
+Anda dapat mendaftar dari menu Pendidikan Orang Tua Jeonju &gt; Aplikasi Pendidikan di situs web Kantor Dukungan Pendidikan Jeonju.</div><div class="err">요일 정상 · 0.8s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">80</span></header><div class="text">Di Badan Dukungan Pendidikan Jeonju, siswa sekolah dasar (kelas 4 hingga 6) anak-anak dan orang tua akan belajar dan mengalami prinsip-prinsip sains dalam kehidupan sehari-hari mereka, dan melamar banyak orang tua yang menarik. (Ketersediaan) 1. 10. 17. (Sabtu) Pendidikan 2. 10. 31. (Sabtu) Aplikasi Pendidikan dapat dilakukan di Jeonju Departemen Pelatihan Induk&gt; Aplikasi Pendidikan di Kantor Dukungan Pendidikan Jeonju.</div><div class="err">변화 없음 · 0.2s</div></article>
+</div></div>
+<div class="lang"><h3>일본어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">99</span></header><div class="text">全州教育支援庁では、小学生（4〜6年生）の子供と保護者が一緒に日常で科学の原理を学び、作り、体験する教育を実施しているので、関心のある保護者の多くのご応募をお願いいたします。（重複応募可能）
+
+1. 10. 17.(土曜日) 教育
+
+2. 10. 31.(土曜日)教育
+
+申請は全州教育支援庁のホームページの全州保護者教育＞教育申請メニューでできます。</div><div class="err">변화 없음 · 2.7s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">98</span></header><div class="text">全州教育支援庁では、小学生（4〜6年生）の子どもと保護者が日常で科学の原理を学び、作り、体験する教育を実施しておりますので、関心のある保護者の皆様のご応募をぜひお願いいたします。 （重複申請可能）
+
+1. 10. 17.( 土曜日) 教育
+
+2. 10. 31.( 土曜日) 教育
+
+申請は、全州教育支援庁のウェブサイトの全州学部保護者教育 &gt; 教育申請メニューから行うことができます。</div><div class="err">변화 없음 · 0.6s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">74</span></header><div class="text">Jeonju教育支援機関では、小学生（4年生4年生）の子供と両親は、日常生活の中で科学の原則を学び、経験し、興味のある人の多くに応募します。 （空室状況）1。10. 17.（土曜日）教育2. 10. 31.（土曜日）教育申請は、Jeonju教育支援事務所における教育用途の中国講演会です。</div><div class="err">&#x27;4年生4年生&#x27;, 중복신청을 &#x27;空室状況&#x27;으로 오역 · 0.2s</div></article>
+</div></div>
+<div class="lang"><h3>중국어(간체)</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">99</span></header><div class="text">全州教育支援厅正在为小学学生（4~6年级）的子女和家长开展在日常生活中学习、创造和体验科学原理的教育，敬请有兴趣的家长踊跃报名。（可重复报名）
+
+1. 10. 17.(星期六)教育
+
+2. 10. 31.(星期六)教育
+
+申请可以在全州教育支援厅的网站的全州家长教育&gt;教育申请菜单中进行。</div><div class="err">변화 없음 · 2.5s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">99</span></header><div class="text">全州教育支援厅为小学生（4~6年级）子女和家长进行在日常生活中一起学习、制作和体验科学原理的教育，希望有兴趣的家长们多多申请。 （可以重复申请）
+
+1. 10. 17.（ 星期六）教育
+
+2. 10. 31.（ 星期六）教育
+
+申请可以在全州教育支援厅网站的全州家长教育&gt;教育申请菜单上进行。</div><div class="err">변화 없음 · 0.5s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">79</span></header><div class="text">在Jeonju教育支助机构，小学生（4至6年级）儿童和父母将学习并体验日常生活中科学原则，并申请许多感兴趣的父母。 （可用性）1. 10.17。（星期六）教育2. 10.11.（星期六）教育申请可以在Jeonju父母培训部门培训，在Jeonju教育支持办公室的教育申请。</div><div class="err">31일을 11일로 오역 · 0.2s</div></article>
+</div></div>
+</div></details>
+<details id="pre-home-letter-ai-digital-playground"><summary><span class="cat">가정통신문 · 전처리 후</span>AI·디지털 꿈 놀이터 행사 안내</summary><div class="body">
+<div class="lang"><h3>영어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">98</span></header><div class="text">Yeongman Elementary School will operate the “2026 AI·Digital Dream Playground” to develop elementary school students throughout Jeollabuk-do’s AI and digital skills. Interested students and parents, please review the information below, and please check the attached document for detailed information.
+
+A. Event name: 2026 AI·Digital Dream Playground
+
+B. Event date and time: 2026. 10. 24. (Saturday) 9:00 AM ~ 12:10 PM
+
+C. Target and number of people: About 72 elementary school students in Jeollabuk-do Special Self-Governing Province
+
+※ 36 students in lower grades (1-3 grades), 36 students in higher grades (4-6 grades)
+
+D. Event location: Youngman Elementary School (08:30-08:50 Registration in the audiovisual room on the 1st floor)
+
+E. Application deadline: 2026. 10. 1. (Thursday) 09:00 ~ 2026. 10. 9. (Friday)
+
+F. Application method: Submit online application form</div><div class="err">목록 기호 A.~F. 정상 · 5.6s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">98</span></header><div class="text">It is said that Yeongman Elementary School operates &quot;2026 AI·Digital Dream Playground&quot; to cultivate the AI and digital capabilities of elementary school students in Jeonbuk Province. Interested students and parents, please check the following information, and check the attached document for details.
+
+A. Event name: 2026 AI·Digital Dream Playground
+
+B. Event date and time: 2026. 10. 24.( Saturday) 09:00 ~ 12:10
+
+C. Target and number of people: A total of 72 elementary school students in Jeonbuk Special Self-Governing Province
+
+※ 36 people in lower grades (1-3 grades), 36 people in high grades (4-6 grades)
+
+D. Event venue: Yeongman Elementary School (08:30-08:50 1st floor audiovisual room registration)
+
+E. Application deadline: 2026. 10. 1.( Thursday) 09:00 ~ 2026. 10. 9.( Friday)
+
+F. How to apply: Submit an online application</div><div class="err">목록 기호·요일 정상 · 0.7s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">70</span></header><div class="text">Only in Elementary School, &quot;2026 AI, Digital Dream Playground&quot; for the AI and Digital Competency of the Elementary School Students in Jeonbuk. If you are interested in the student and parents, please check the following and confirm the attachment documentation for details. A. Demonstrate: 2026 AI · Digital Dream Playground B. Date of Demonstration: 2026. 10. 24. (Saturday) 09:00 am to 12:10 C. Targets and Personnel: Elementary School Students in Special Self-Governing Province 72 people ※ 36 students (Grade 1-3), 36 students (grade 4-6) 36 D. Place: Manual Elementary School (08: 30-08: 50 1st Floor Audience Room Registration) E. Application Different: 2026. 10. 1. (Thursday) 09:00 ~ 2026. 10. 9. (Friday) F. Application Method: Submit an online application</div><div class="err">목록 기호는 유지, 학교명 &#x27;Only&#x27;, &#x27;Manual Elementary&#x27;는 남음 · 0.1s</div></article>
+</div></div>
+<div class="lang"><h3>베트남어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">94</span></header><div class="text">Trường Tiểu học Yeongman thông báo sẽ vận hành chương trình 「Trường chơi ước mơ AI·Kỹ thuật số 2026」 nhằm phát triển năng lực AI·Kỹ thuật số cho học sinh tiểu học trên toàn tỉnh Jeollabuk. Các học sinh và phụ huynh quan tâm vui lòng xem thông tin bên dưới và xem tài liệu đính kèm để biết thêm chi tiết.
+
+A. Tên sự kiện: Khu vui chơi mơ ước AI·Kỹ thuật số 2026
+
+B. Thời gian sự kiện: 24.10.2026 (Thứ Bảy) 09:00 ~ 12:10
+
+C. Đối tượng và số người: Khoảng 72 học sinh tiểu học trong toàn bộ tỉnh tự trị đặc biệt Jeollabuk-do.
+
+※ Học sinh tiểu học (lớp 1-3) 36 người, học sinh trung học (lớp 4-6) 36 người
+
+D. Địa điểm tổ chức sự kiện: Trường Tiểu học Yeongman (08:30-08:50 Đăng ký phòng đa phương tiện tầng 1)
+
+E. Hạn nộp đơn: 2026. 10. 1. (Thứ Năm) 09:00 ~ 2026. 10. 9. (Thứ Sáu)
+
+F. Cách nộp đơn: Nộp đơn trực tuyến</div><div class="err">목록 기호 정상, 고학년을 &#x27;중학생&#x27;으로 오역은 남음 · 6.4s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">94</span></header><div class="text">Người ta nói rằng Trường Tiểu học Yeongman điều hành &quot;2026 AI · Sân chơi Giấc mơ Kỹ thuật số&quot; để trau dồi AI và khả năng kỹ thuật số của học sinh tiểu học ở tỉnh Jeonbuk. Học sinh và phụ huynh quan tâm, vui lòng kiểm tra thông tin sau và kiểm tra tài liệu đính kèm để biết chi tiết.
+
+Một. Tên sự kiện: 2026 AI·Digital Dream Playground
+
+B. Ngày và giờ diễn ra sự kiện: 2026. 10. 24. ( Thứ Bảy) 09:00 ~ 12:10
+
+C. Mục tiêu và số lượng người: Tổng cộng 72 học sinh tiểu học ở tỉnh tự trị đặc biệt Jeonbuk
+
+※ 36 người ở các lớp thấp hơn (1-3 lớp), 36 người ở các lớp cao (4-6 lớp)
+
+D. Địa điểm tổ chức sự kiện: Trường tiểu học Yeongman (08:30-08:50 đăng ký phòng nghe nhìn tầng 1)
+
+E. Hạn chót nộp đơn: 2026. 10. 1. ( Thứ Năm) 09:00 ~ 2026. 10. 9. ( Thứ Sáu)
+
+F. Cách đăng ký: Gửi đơn đăng ký trực tuyến</div><div class="err">요일 정상, &#x27;A.&#x27;를 &#x27;Một(하나)&#x27;로 번역 · 1.3s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">65</span></header><div class="text">Chỉ có ở trường tiểu học, &quot;2026 AI, Sân chơi Damor Dream kỹ thuật số&quot; cho AI và năng lực kỹ thuật số của học sinh tiểu học ở Jeonbuk. Nếu bạn quan tâm đến sinh viên và phụ huynh, vui lòng kiểm tra các mục sau và xác nhận tài liệu đính kèm để biết chi tiết. A. Chứng minh: 2026 AI · Sân chơi trong mơ kỹ thuật số B. Ngày trình diễn: 2026. 10. 24. (Thứ Bảy) 09:00 sáng đến 12:10 C. Mục tiêu và nhân sự: Học sinh tiểu học trong tỉnh tự quản đặc biệt 72 người ※ 36 sinh viên (Lớp học 1-3), 36 học sinh (lớp 4-6) 36 D. Địa điểm: Trường tiểu học thủ công (08: 30-08: 50 Đăng ký khán giả tầng 1) E. Ứng dụng khác nhau: 2026. 10. (Thứ Năm) 09:00 ~ 2026. 10. (Thứ Sáu) F. Phương thức ứng dụng: Gửi một ứng dụng trực tuyến</div><div class="err">학교명 소실, &#x27;A.&#x27;를 &#x27;Chứng minh&#x27;로 번역 · 0.2s</div></article>
+</div></div>
+<div class="lang"><h3>인도네시아어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">99</span></header><div class="text">Sekolah Dasar Youngman dikatakan akan mengoperasikan 「2026 AI·Digital Dream Playground」 untuk mengembangkan kompetensi AI·digital siswa sekolah dasar di seluruh wilayah Jeollabuk-do. Siswa dan orang tua yang tertarik diharapkan memeriksa informasi di bawah ini, dan untuk informasi lebih lanjut, silakan periksa dokumen terlampir.
+
+A. Nama acara: Taman Bermain Impian AI·Digital 2026
+
+B. Tanggal dan waktu acara: 24.10.2026 (Sabtu) 09.00 ~ 12.10
+
+C. Sasaran dan jumlah peserta: Sekitar 72 siswa sekolah dasar di dalam Provinsi Otonom Khusus Jeollabuk-do
+
+※ Siswa kelas rendah (kelas 1-3) 36 orang, siswa kelas atas (kelas 4-6) 36 orang
+
+D. Tempat acara: Sekolah Dasar Yeongman (08:30-08:50 pendaftaran di ruang audiovisual lantai 1)
+
+E. Batas waktu pendaftaran: 2026. 10. 1. (Kamis) 09:00 ~ 2026. 10. 9. (Jumat)
+
+F. Cara pendaftaran: Mengirimkan formulir pendaftaran online</div><div class="err">목록 기호 정상 · 6.7s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">98</span></header><div class="text">Dikatakan bahwa Sekolah Dasar Yeongman mengoperasikan &quot;2026 AI·Digital Dream Playground&quot; untuk menumbuhkan kemampuan AI dan digital siswa sekolah dasar di Provinsi Jeonbuk. Siswa dan orang tua yang tertarik, silakan periksa informasi berikut, dan periksa dokumen terlampir untuk detailnya.
+
+A. Nama acara: 2026 AI·Digital Dream Playground
+
+B. Tanggal dan waktu acara: 2026. 10. 24. ( Sabtu) 09:00 ~ 12:10
+
+C. Target dan jumlah orang: Sebanyak 72 siswa sekolah dasar di Provinsi Pemerintahan Sendiri Khusus Jeonbuk
+
+※ 36 orang di kelas bawah (1-3 kelas), 36 orang di kelas tinggi (4-6 kelas)
+
+D. Tempat acara: Sekolah Dasar Yeongman (08:30-08:50 pendaftaran ruang audiovisual lantai 1)
+
+E. Batas waktu pendaftaran: 2026. 10. 1. ( Kamis) 09:00 ~ 2026. 10. 9. ( Jumat)
+
+F. Cara mendaftar: Kirimkan aplikasi online</div><div class="err">목록 기호·요일 정상 · 1.2s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">58</span></header><div class="text">Hanya di sekolah dasar, &quot;2026 Ai, Digital Dream Playground&quot; untuk kompetensi AI dan Digital dari siswa sekolah dasar di Jeonbuk. Jika Anda tertarik pada siswa dan orang tua, silakan periksa yang berikut ini dan konfirmasi dokumentasi lampiran untuk detailnya. A. Demonstrasikan: 2026 ai · Digital Dream Playground B. Tanggal demonstrasi: 2026. 10. (Sabtu) 09:00 AM hingga 12:10 C. Target dan personel: Siswa sekolah dasar dalam provinsi pemerintahan sendiri 72 orang (Kelas 1-3), 36 siswa (Kelas 4-6) 36 D. TEMPAT: MANUAL SEKOLAH ELEMENT (08: 30-08: 50 Pendaftaran kamar audiens lantai 1) E. Aplikasi berbeda: 2026. 10. (Kamis) 09:00 ~ 2026. 9. (Jumat) F. Metode F. Aplikasi: F. Aplikasi online</div><div class="err">학교명 소실, 24일 누락 · 0.2s</div></article>
+</div></div>
+<div class="lang"><h3>일본어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">99</span></header><div class="text">ヨンマン小学校では、全北道内の小学生のAI・デジタル能力の育成のために「2026 AI・デジタル夢の遊び場」を運営するとされています。ご興味のある学生や保護者の皆様は、以下の内容をご確認いただき、詳細は添付文書をご確認ください。
+
+A. イベント名：2026 AI・デジタル夢の遊び場
+
+B. 行事日時：2026. 10. 24.(土曜日) 09時00分〜12時10分
+
+C.対象及び人数：全北特別自治道内小学校生総計72名前後
+
+※低学年（1-3年生）36名、高学年（4-6年生）36名
+
+D.行事場所：ヨンマン小学校（08:30-08:501階視聴覚室登録）
+
+E. 申請期限：2026. 10. 1.(木曜日) 09:00 ～ 2026. 10. 9.(金曜日)
+
+F. 申請方法：オンライン申請書提出</div><div class="err">목록 기호 정상 · 5.1s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">97</span></header><div class="text">ヨンマン小学校では、全羅北道の小学生のAI・デジタル能力育成を目的として「2026 AI・デジタル夢遊び場」を運営しているそうです。 ご関心のある学生と保護者の方は、以下の内容をご確認いただき、詳細は添付文書をご確認ください。
+
+A. イベント名：2026 AI・デジタル 夢の遊び場
+
+B. イベント日時：2026年。 10. 24.( 土曜日) 09時00分〜12時10分
+
+C. 対象および人数：全羅北道特別自治道内の小学生（総計72名前後）
+
+※ 低学年（1〜3年生）36名、高学年（4〜6年生）36名
+
+D. 開催場所：ヨンマン小学校（08:30〜08:50）1階視聴覚室登録
+
+E. 申請期限：2026年。 10. 1.( 木曜日) 09:00〜2026. 10. 9.( 金曜日)
+
+F. 申請方法：オンライン申請書の提出</div><div class="err">&#x27;2026年。&#x27; 날짜 깨짐 · 0.8s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">55</span></header><div class="text">Eneonbukの小学生のAIおよびデジタル能力のための小学校「2026 AI、デジタルドリームプレイグラウンド」でのみ。 あなたが学生と両親に興味があるならば、次のことを確認して、詳細については添付資料を確認してください。 A.デジタルドリームプレイグラウンドB.デモンストレーション日：2026.10.24.（土）09:00 AM~12:10 C.ターゲットと担当者：特大学校の学生：特別学生72人（グレード）1-3）、36人の学生（3年生4-6）36 D.場所：手動小学校（08：30-08：50 1階オーディエンスルーム登録）E.アプリケーションは異なります：2026.10.（木曜日）09:00~2026.10.（金曜日）F.アプリケーション方法：オンラインアプリケーションを送信する</div><div class="err">행사명 누락, 날짜 누락, &#x27;アプリケーションは異なります&#x27; · 0.2s</div></article>
+</div></div>
+<div class="lang"><h3>중국어(간체)</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">98</span></header><div class="text">永满小学将在全罗北道全境的小学生培养AI·数字能力方面，运营“2026 AI·数字梦幻乐园”。有兴趣的学生和家长请确认以下内容，详细事项请查阅附件文件。
+
+A. 活动名称：2026 AI·数字梦想游乐场
+
+B. 活动日期时间：2026. 10. 24.(星期六) 09时00分 ~ 12时10分
+
+C.对象及人数：全罗北道内小学学生总计72人左右
+
+※低年级（1-3年级）36名，高年级（4-6年级）36名
+
+D.活动地点：永满小学（08:30-08:50 1楼视听教室登记）
+
+E. 申请期限：2026. 10. 1.（星期四）09:00 ~ 2026. 10. 9.（星期五）
+
+F.申请方法：提交在线申请表</div><div class="err">목록 기호 정상 · 4.8s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">98</span></header><div class="text">据说永满小学为了培养全北道内小学生的AI·数字能力，运营“2026 AI·数字梦想游乐场”。 感兴趣的学生和家长请确认以下内容，详细事项请确认附件。
+
+A. 活动名称：2026 AI·数字梦想游乐场
+
+B. 活动日期：2026。 10. 24.( 星期六）09点00分～12点10分
+
+C. 对象及人数：全北特别自治道内小学生共72人左右
+
+※低年级（1-3年级）36名，高年级（4-6年级）36名
+
+D. 活动地点：永满小学（08:30-08:50 1楼视听室登记）
+
+E. 申请期限：2026。 10. 1.( 星期四) 09:00 ~ 2026. 10. 9.（ 星期五）
+
+F. 申请方法：在线提交申请书</div><div class="err">&#x27;2026。&#x27; 날짜 깨짐 · 0.7s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">55</span></header><div class="text">只有在小学，“2026 AI，数字梦游游乐场”对于Jeonuk中小学生的AI和数字能力。 如果您对学生和父母感兴趣，请检查以下内容，并确认附件文档以获取详细信息。 A.展示：2026 AI·数码梦幻游乐场B.示范日期：2026. 24.（星期六）09:00至12:10 C.目标和人员：特别自治省的小学生72人※36名学生（等级1-3），36名学生（4-6级）36 D.地点：手动小学（08：30-08：50 1楼观众房间注册）E.应用程序不同：2026.1.1.1.（星期四）09:00〜2026. 9.（星期五）F.应用方法：提交在线申请</div><div class="err">&#x27;只有在小学&#x27;, 날짜 &#x27;2026.1.1.1&#x27; · 0.3s</div></article>
+</div></div>
+</div></details>
+<details id="pre-meal-oct-07"><summary><span class="cat">급식 · 전처리 후</span>10월 7일 (수) 급식</summary><div class="body">
+<div class="lang"><h3>영어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">92</span></header><div class="text">Octopus stir-fried rice
+
+Beef pancake soup (1.16)
+
+Bean sprout salad (5)
+
+Cheese chicken galbi (2.5.6.13.15)
+
+Cabbage kimchi (9.13)
+
+Soy sauce (5.6.13)
+
+Apples (13)
+
+Allergy information
+1.Eggs 2.Milk 3.Buckwheat 4.Peanuts 5.Soybeans 6.Wheat 7.Mackerel 8.Crab 9.Shrimp 10.Pork 11.Peach 12.Tomato 13.Sulfites 14.Walnuts 15.Chicken 16.Beef 17.Squid 18.Shellfish (including oysters, abalone, mussels) 19.Pine nuts
+
+※ The diet may be changed due to school circumstances.</div><div class="err">알레르기 정상(고정 표), 떡국→&#x27;pancake soup&#x27; · 2.7s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">90</span></header><div class="text">Octopus rice
+
+Beef rice cake soup (1.16)
+
+Sorted bean sprouts (5)
+
+Cheese chicken ribs (2.5.6.13.15)
+
+Picked cabbage (9.13)
+
+Seasoning (5.6.13)
+
+Apple (13)
+
+Allergy information
+1.Eggs 2.Milk 3.Buckwheat 4.Peanuts 5.Soybeans 6.Wheat 7.Mackerel 8.Crab 9.Shrimp 10.Pork 11.Peach 12.Tomato 13.Sulfites 14.Walnuts 15.Chicken 16.Beef 17.Squid 18.Shellfish (including oysters, abalone, mussels) 19.Pine nuts
+
+※ The menu is subject to change depending on the school&#x27;s circumstances.</div><div class="err">알레르기 정상, &#x27;Sorted bean sprouts&#x27;, &#x27;Picked cabbage&#x27; · 0.4s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">75</span></header><div class="text">Octopus Beef Ciok (1.16) Beans (5) Cheese Chicken Rib (2.5.6.13.15) Coupled Care (9.13) Season (5.6.13) Apples (13)
+
+Allergy information
+1.Eggs 2.Milk 3.Buckwheat 4.Peanuts 5.Soybeans 6.Wheat 7.Mackerel 8.Crab 9.Shrimp 10.Pork 11.Peach 12.Tomato 13.Sulfites 14.Walnuts 15.Chicken 16.Beef 17.Squid 18.Shellfish (including oysters, abalone, mussels) 19.Pine nuts
+
+※ Diet may be changed by school circumstances.</div><div class="err">알레르기 정상, 메뉴는 &#x27;Ciok&#x27;, &#x27;Coupled Care&#x27; 등 깨짐 · 0.1s</div></article>
+</div></div>
+<div class="lang"><h3>베트남어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill warn">75</span></header><div class="text">Cơm mực
+
+Súp bánh gạo thịt bò (1.16)
+
+Salad rau đậu xanh (5)
+
+Gimbap gà phô mai (2.5.6.13.15)
+
+Baechui gỏi (9.13)
+
+Nước sốt (5.6.13)
+
+Táo (13)
+
+Thông tin dị ứng
+1.Trứng 2.Sữa 3.Kiều mạch 4.Đậu phộng 5.Đậu nành 6.Lúa mì 7.Cá thu 8.Cua 9.Tôm 10.Thịt lợn 11.Đào 12.Cà chua 13.Sulfit 14.Quả óc chó 15.Thịt gà 16.Thịt bò 17.Mực 18.Động vật có vỏ (gồm hàu, bào ngư, vẹm) 19.Hạt thông
+
+※ Chế độ ăn có thể thay đổi tùy thuộc vào tình hình của trường.</div><div class="err">알레르기 정상, 문어→오징어(알레르기 17번 식재료), 치즈닭갈비→&#x27;Gimbap&#x27; · 2.7s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">90</span></header><div class="text">Cơm bạch tuộc
+
+Súp bánh gạo bò (1.16)
+
+Giá đỗ đã phân loại (5)
+
+Sườn gà phô mai (2.5.6.13.15)
+
+Bắp cải hái (9.13)
+
+Gia vị (5.6.13)
+
+Táo (13)
+
+Thông tin dị ứng
+1.Trứng 2.Sữa 3.Kiều mạch 4.Đậu phộng 5.Đậu nành 6.Lúa mì 7.Cá thu 8.Cua 9.Tôm 10.Thịt lợn 11.Đào 12.Cà chua 13.Sulfit 14.Quả óc chó 15.Thịt gà 16.Thịt bò 17.Mực 18.Động vật có vỏ (gồm hàu, bào ngư, vẹm) 19.Hạt thông
+
+※ Thực đơn có thể thay đổi tùy theo hoàn cảnh của trường.</div><div class="err">알레르기 정상, 메뉴명 2개 오역 · 0.8s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">70</span></header><div class="text">Octopus Beef CIOK (1.16) Đậu (5) sườn gà phô mai (2.5.6.15.15) Chăm sóc ghép (9.13) Mùa (5.6.13) Táo (13)
+
+Thông tin dị ứng
+1.Trứng 2.Sữa 3.Kiều mạch 4.Đậu phộng 5.Đậu nành 6.Lúa mì 7.Cá thu 8.Cua 9.Tôm 10.Thịt lợn 11.Đào 12.Cà chua 13.Sulfit 14.Quả óc chó 15.Thịt gà 16.Thịt bò 17.Mực 18.Động vật có vỏ (gồm hàu, bào ngư, vẹm) 19.Hạt thông
+
+※ Chế độ ăn uống có thể được thay đổi bởi hoàn cảnh trường học.</div><div class="err">메뉴 깨짐, 알레르기 번호 &#x27;2.5.6.15.15&#x27;로 변형 · 0.1s</div></article>
+</div></div>
+<div class="lang"><h3>인도네시아어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill warn">79</span></header><div class="text">Nasi udang kepiting
+
+Sup tteok daging sapi (1.16)
+
+Tumis daun kacang hijau (5)
+
+Chicken Galbi keju (2.5.6.13.15)
+
+Baechui gukjeolli (13.9)
+
+Bumbu (5.6.13)
+
+Apel (13)
+
+Informasi alergi
+1.Telur 2.Susu 3.Soba (buckwheat) 4.Kacang tanah 5.Kedelai 6.Gandum 7.Ikan makarel 8.Kepiting 9.Udang 10.Daging babi 11.Persik 12.Tomat 13.Sulfit 14.Kenari 15.Daging ayam 16.Daging sapi 17.Cumi-cumi 18.Kerang-kerangan (termasuk tiram, abalon, kerang hijau) 19.Kacang pinus
+
+※ Pola makan dapat diubah tergantung pada keadaan sekolah.</div><div class="err">알레르기 정상, 문어톳밥→&#x27;새우 게 밥&#x27;(알레르기 식재료) · 2.9s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">90</span></header><div class="text">Nasi gurita
+
+Sup kue beras daging sapi (1.16)
+
+Tauge yang disortir (5)
+
+Iga ayam keju (2.5.6.13.15)
+
+Kubis yang dipetik (9.13)
+
+Bumbu (5.6.13)
+
+Apel (13)
+
+Informasi alergi
+1.Telur 2.Susu 3.Soba (buckwheat) 4.Kacang tanah 5.Kedelai 6.Gandum 7.Ikan makarel 8.Kepiting 9.Udang 10.Daging babi 11.Persik 12.Tomat 13.Sulfit 14.Kenari 15.Daging ayam 16.Daging sapi 17.Cumi-cumi 18.Kerang-kerangan (termasuk tiram, abalon, kerang hijau) 19.Kacang pinus
+
+※ Menu dapat berubah tergantung pada keadaan sekolah.</div><div class="err">알레르기 정상, 메뉴명 2개 오역 · 0.7s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">75</span></header><div class="text">Octopus Beef Ciok (1.16) Kacang (5) Rib Ayam Keju (2.5.6.13.15) Perawatan Ditambah (9.13) Musim (5.6.13) Apel (13)
+
+Informasi alergi
+1.Telur 2.Susu 3.Soba (buckwheat) 4.Kacang tanah 5.Kedelai 6.Gandum 7.Ikan makarel 8.Kepiting 9.Udang 10.Daging babi 11.Persik 12.Tomat 13.Sulfit 14.Kenari 15.Daging ayam 16.Daging sapi 17.Cumi-cumi 18.Kerang-kerangan (termasuk tiram, abalon, kerang hijau) 19.Kacang pinus
+
+※ Diet dapat diubah oleh keadaan sekolah.</div><div class="err">메뉴 깨짐 · 0.1s</div></article>
+</div></div>
+<div class="lang"><h3>일본어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill warn">79</span></header><div class="text">イカのスープご飯
+
+牛肉麺スープ（1.16）
+
+豆芽ナムビム（5）
+
+チーズチキンカルビ（2.5.6.13.15）
+
+白菜のキムチ（9.13）
+
+醤油（5.6.13）
+
+リンゴ（13）
+
+アレルギー情報
+1.卵 2.乳 3.そば 4.落花生 5.大豆 6.小麦 7.さば 8.かに 9.えび 10.豚肉 11.もも 12.トマト 13.亜硫酸塩 14.くるみ 15.鶏肉 16.牛肉 17.いか 18.貝類（かき・あわび・ムール貝を含む） 19.松の実
+
+※食事は学校の事情により変更されることがあります。</div><div class="err">알레르기 정상, 문어→イカ(오징어), 떡국→&#x27;麺スープ&#x27; · 2.6s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">94</span></header><div class="text">タコのご飯
+
+牛肉餅スープ (1.16)
+
+もやし和え物 (5)
+
+チーズチキンカルビ (2.5.6.13.15)
+
+白菜の皮漬け (9.13)
+
+調味料 (5.6.13)
+
+りんご (13)
+
+アレルギー情報
+1.卵 2.乳 3.そば 4.落花生 5.大豆 6.小麦 7.さば 8.かに 9.えび 10.豚肉 11.もも 12.トマト 13.亜硫酸塩 14.くるみ 15.鶏肉 16.牛肉 17.いか 18.貝類（かき・あわび・ムール貝を含む） 19.松の実
+
+※ 食事は学校の事情により変更されることがあります。</div><div class="err">알레르기 정상, &#x27;白菜の皮漬け&#x27; · 0.5s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">75</span></header><div class="text">タコ牛肉CIOK（1.16）豆（5）チーズチキンリブ（2.5.6.13.15）連結ケア（9.13）シーズン（5.6.13）リンゴ（13）
+
+アレルギー情報
+1.卵 2.乳 3.そば 4.落花生 5.大豆 6.小麦 7.さば 8.かに 9.えび 10.豚肉 11.もも 12.トマト 13.亜硫酸塩 14.くるみ 15.鶏肉 16.牛肉 17.いか 18.貝類（かき・あわび・ムール貝を含む） 19.松の実
+
+※食事は学校の状況によって変更される可能性があります。</div><div class="err">메뉴 깨짐 · 0.1s</div></article>
+</div></div>
+<div class="lang"><h3>중국어(간체)</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">98</span></header><div class="text">章鱼炒饭
+
+牛肉年糕汤（1.16）
+
+豆芽凉拌（5）
+
+芝士鸡肉辣炒肉（2.5.6.13.15）
+
+白菜泡菜（9.13）
+
+酱油（5.6.13）
+
+苹果（13）
+
+过敏原信息
+1.鸡蛋 2.牛奶 3.荞麦 4.花生 5.大豆 6.小麦 7.鲭鱼 8.蟹 9.虾 10.猪肉 11.桃 12.番茄 13.亚硫酸盐 14.核桃 15.鸡肉 16.牛肉 17.鱿鱼 18.贝类（包括牡蛎、鲍鱼、贻贝） 19.松子
+
+※饮食可能会因为学校的情况而改变。</div><div class="err">알레르기 정상, 메뉴 거의 정확 · 2.4s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">95</span></header><div class="text">章鱼饭
+
+牛肉年糕汤 (1.16)
+
+腌豆芽 (5)
+
+奶酪鸡排 (2.5.6.13.15)
+
+白菜皮（9.13）
+
+调味酱 (5.6.13)
+
+苹果 (13)
+
+过敏原信息
+1.鸡蛋 2.牛奶 3.荞麦 4.花生 5.大豆 6.小麦 7.鲭鱼 8.蟹 9.虾 10.猪肉 11.桃 12.番茄 13.亚硫酸盐 14.核桃 15.鸡肉 16.牛肉 17.鱿鱼 18.贝类（包括牡蛎、鲍鱼、贻贝） 19.松子
+
+※菜单可能会根据学校情况而变更。</div><div class="err">알레르기 정상, &#x27;白菜皮&#x27; · 0.4s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">75</span></header><div class="text">八达通牛肉Ciok（1.16）豆类（5）奶酪鸡肋（2.5.6.13.15）耦合护理（9.13）季节（5.6.13）苹果（13）
+
+过敏原信息
+1.鸡蛋 2.牛奶 3.荞麦 4.花生 5.大豆 6.小麦 7.鲭鱼 8.蟹 9.虾 10.猪肉 11.桃 12.番茄 13.亚硫酸盐 14.核桃 15.鸡肉 16.牛肉 17.鱿鱼 18.贝类（包括牡蛎、鲍鱼、贻贝） 19.松子
+
+※学校情况可能会改变饮食。</div><div class="err">&#x27;八达通(교통카드)&#x27; 등 메뉴 깨짐 · 0.1s</div></article>
+</div></div>
+</div></details>
+<details id="pre-meal-oct-06"><summary><span class="cat">급식 · 전처리 후</span>10월 6일 (화) 급식</summary><div class="body">
+<div class="lang"><h3>영어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill warn">73</span></header><div class="text">Eco-friendly black rice rice
+
+Scallops and spinach doenjang soup (5.6.18)
+
+Dorajioi salad (5.6.13)
+
+Zajang duck bulgogi (2.5.6.13)
+
+Sweet potato soup (5.6.13)
+
+Cauliflower kimchi (9)
+
+Green tea seaweed wrap
+
+Allergy information
+1.Eggs 2.Milk 3.Buckwheat 4.Peanuts 5.Soybeans 6.Wheat 7.Mackerel 8.Crab 9.Shrimp 10.Pork 11.Peach 12.Tomato 13.Sulfites 14.Walnuts 15.Chicken 16.Beef 17.Squid 18.Shellfish (including oysters, abalone, mussels) 19.Pine nuts
+
+※ The diet may be changed due to school circumstances.</div><div class="err">알레르기 정상, 바지락→Scallops, 배추김치→Cauliflower 등 메뉴 오역 5건 · 3.1s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">89</span></header><div class="text">Eco-friendly black rice
+
+Clams and spinach miso soup (5.6.18)
+
+Doragioi Saengchae (5.6.13)
+
+Jjajang duck bulgogi (2.5.6.13)
+
+Sweet potato soup (5.6.13)
+
+Cabbage kimchi (9)
+
+Green tea mussam
+
+Allergy information
+1.Eggs 2.Milk 3.Buckwheat 4.Peanuts 5.Soybeans 6.Wheat 7.Mackerel 8.Crab 9.Shrimp 10.Pork 11.Peach 12.Tomato 13.Sulfites 14.Walnuts 15.Chicken 16.Beef 17.Squid 18.Shellfish (including oysters, abalone, mussels) 19.Pine nuts
+
+※ The menu is subject to change depending on the school&#x27;s circumstances.</div><div class="err">알레르기 정상, 메뉴 음역·&#x27;soup&#x27; 오역 · 0.5s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">75</span></header><div class="text">Eco-friendly blackbeam bobbigami spinach (5.6.18) Dorajio Dori (5.6.13) Win Duck Fire (2.5.6.13) Sweet potato (5.6.13) Cabbage kimchi (9) green tea moss
+
+Allergy information
+1.Eggs 2.Milk 3.Buckwheat 4.Peanuts 5.Soybeans 6.Wheat 7.Mackerel 8.Crab 9.Shrimp 10.Pork 11.Peach 12.Tomato 13.Sulfites 14.Walnuts 15.Chicken 16.Beef 17.Squid 18.Shellfish (including oysters, abalone, mussels) 19.Pine nuts
+
+※ Diet may be changed by school circumstances.</div><div class="err">메뉴 깨짐(&#x27;Win Duck Fire&#x27;) · 0.1s</div></article>
+</div></div>
+<div class="lang"><h3>베트남어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill bad">69</span></header><div class="text">Cơm gạo lứt hữu cơ
+
+Súp nước tương đậu nành với sò điệp và cải bina (5.6.18)
+
+Salad rau dưa chuột (5.6.13)
+
+Gà xào đậu phụ và thịt bò xào (2.5.6.13)
+
+Súp vị khoai lang (5.6.13)
+
+Kimchi cải bắp (9)
+
+Bánh cuốn rau mu với trà xanh
+
+Thông tin dị ứng
+1.Trứng 2.Sữa 3.Kiều mạch 4.Đậu phộng 5.Đậu nành 6.Lúa mì 7.Cá thu 8.Cua 9.Tôm 10.Thịt lợn 11.Đào 12.Cà chua 13.Sulfit 14.Quả óc chó 15.Thịt gà 16.Thịt bò 17.Mực 18.Động vật có vỏ (gồm hàu, bào ngư, vẹm) 19.Hạt thông
+
+※ Chế độ ăn có thể thay đổi tùy thuộc vào tình hình của trường.</div><div class="err">알레르기 정상, 짜장오리불고기→&#x27;닭·두부·소고기 볶음&#x27;(알레르기 식재료 추가) · 3.5s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">89</span></header><div class="text">Gạo đen thân thiện với môi trường
+
+Súp miso ngao và rau bina (5.6.18)
+
+Doragioi Saengchae (5.6.13)
+
+Bulgogi vịt Jjajang (2.5.6.13)
+
+Súp khoai lang (5.6.13)
+
+Kim chi bắp cải (9)
+
+Trà xanh mussam
+
+Thông tin dị ứng
+1.Trứng 2.Sữa 3.Kiều mạch 4.Đậu phộng 5.Đậu nành 6.Lúa mì 7.Cá thu 8.Cua 9.Tôm 10.Thịt lợn 11.Đào 12.Cà chua 13.Sulfit 14.Quả óc chó 15.Thịt gà 16.Thịt bò 17.Mực 18.Động vật có vỏ (gồm hàu, bào ngư, vẹm) 19.Hạt thông
+
+※ Thực đơn có thể thay đổi tùy theo hoàn cảnh của trường.</div><div class="err">알레르기 정상, 메뉴 음역 · 0.8s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">70</span></header><div class="text">BlackBigami Spinach Spinach (5.6.18) Dorajio Dori (5.6.13) Win Vịt lửa (2.5.6.13) Khoai lang (5.6.13) Cabin KIMCHI (9) Rêu trà xanh
+
+Thông tin dị ứng
+1.Trứng 2.Sữa 3.Kiều mạch 4.Đậu phộng 5.Đậu nành 6.Lúa mì 7.Cá thu 8.Cua 9.Tôm 10.Thịt lợn 11.Đào 12.Cà chua 13.Sulfit 14.Quả óc chó 15.Thịt gà 16.Thịt bò 17.Mực 18.Động vật có vỏ (gồm hàu, bào ngư, vẹm) 19.Hạt thông
+
+※ Chế độ ăn uống có thể được thay đổi bởi hoàn cảnh trường học.</div><div class="err">메뉴 깨짐 · 0.1s</div></article>
+</div></div>
+<div class="lang"><h3>인도네시아어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill warn">70</span></header><div class="text">Nasi beras hitam ramah lingkungan
+
+Sup doenjang udang dan bayam (5.6.18)
+
+Salad doraji (5.6.13)
+
+Ayam Goreng dengan Nasi Goreng Saus Tofu (2.5.6.13)
+
+Sup rasa ubi jalar (5.6.13)
+
+Kimchi kubis (9)
+
+Ssam kacang hijau dengan teh hijau
+
+Informasi alergi
+1.Telur 2.Susu 3.Soba (buckwheat) 4.Kacang tanah 5.Kedelai 6.Gandum 7.Ikan makarel 8.Kepiting 9.Udang 10.Daging babi 11.Persik 12.Tomat 13.Sulfit 14.Kenari 15.Daging ayam 16.Daging sapi 17.Cumi-cumi 18.Kerang-kerangan (termasuk tiram, abalon, kerang hijau) 19.Kacang pinus
+
+※ Pola makan dapat diubah tergantung pada keadaan sekolah.</div><div class="err">알레르기 정상, 바지락→새우, 오리→닭(알레르기 식재료) · 3.2s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">89</span></header><div class="text">Beras hitam ramah lingkungan
+
+Sup miso kerang dan bayam (5.6.18)
+
+Doragioi Saengchae (5.6.13)
+
+Bulgogi bebek Jjajang (2.5.6.13)
+
+Sup ubi jalar (5.6.13)
+
+Kubis kimchi (9)
+
+Mussam teh hijau
+
+Informasi alergi
+1.Telur 2.Susu 3.Soba (buckwheat) 4.Kacang tanah 5.Kedelai 6.Gandum 7.Ikan makarel 8.Kepiting 9.Udang 10.Daging babi 11.Persik 12.Tomat 13.Sulfit 14.Kenari 15.Daging ayam 16.Daging sapi 17.Cumi-cumi 18.Kerang-kerangan (termasuk tiram, abalon, kerang hijau) 19.Kacang pinus
+
+※ Menu dapat berubah tergantung pada keadaan sekolah.</div><div class="err">알레르기 정상, 메뉴 음역 · 0.7s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">70</span></header><div class="text">Bayam Blackbeam Bobbigami Ramah Lingkungan (5.6.18) Dorajio Dori (5.6.13) Menangkan Fire Duck (2.5.6.13) Kentang Jalar (5.6.13) Kimchi Kimchi (9) Teh Hijau Moss
+
+Informasi alergi
+1.Telur 2.Susu 3.Soba (buckwheat) 4.Kacang tanah 5.Kedelai 6.Gandum 7.Ikan makarel 8.Kepiting 9.Udang 10.Daging babi 11.Persik 12.Tomat 13.Sulfit 14.Kenari 15.Daging ayam 16.Daging sapi 17.Cumi-cumi 18.Kerang-kerangan (termasuk tiram, abalon, kerang hijau) 19.Kacang pinus
+
+※ Diet dapat diubah oleh keadaan sekolah.</div><div class="err">메뉴 깨짐 · 0.1s</div></article>
+</div></div>
+<div class="lang"><h3>일본어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill warn">84</span></header><div class="text">環境に優しい黒米ご飯
+
+ハマグリ千切り人参味噌汁（5.6.18）
+
+ドラジオイ生菜（5.6.13）
+
+チャジャンアヒルブルゴギ（2.5.6.13）
+
+じゃがいも味湯（5.6.13）
+
+白菜キムチ（9）
+
+緑茶ムサム
+
+アレルギー情報
+1.卵 2.乳 3.そば 4.落花生 5.大豆 6.小麦 7.さば 8.かに 9.えび 10.豚肉 11.もも 12.トマト 13.亜硫酸塩 14.くるみ 15.鶏肉 16.牛肉 17.いか 18.貝類（かき・あわび・ムール貝を含む） 19.松の実
+
+※食事は学校の事情により変更されることがあります。</div><div class="err">알레르기 정상, 시금치→&#x27;千切り人参&#x27;, 고구마→감자 · 2.9s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">89</span></header><div class="text">環境に優しい黒米ご飯
+
+バジラシとほうれん草の味噌汁 (5.6.18)
+
+ドラジオイ生菜 (5.6.13)
+
+ジャージャー鴨プルコギ (2.5.6.13)
+
+さつまいも味湯 (5.6.13)
+
+白菜キムチ (9)
+
+緑茶ムサム
+
+アレルギー情報
+1.卵 2.乳 3.そば 4.落花生 5.大豆 6.小麦 7.さば 8.かに 9.えび 10.豚肉 11.もも 12.トマト 13.亜硫酸塩 14.くるみ 15.鶏肉 16.牛肉 17.いか 18.貝類（かき・あわび・ムール貝を含む） 19.松の実
+
+※ 食事は学校の事情により変更されることがあります。</div><div class="err">알레르기 정상, &#x27;バジラシ&#x27; 음역 · 0.5s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">70</span></header><div class="text">環境に優しいBlackbeam Bobbbigami Spinach（5.6.18）Dorajio Dori（5.6.13）Winアヒル火災（2.5.6.13）サツマイモ（5.6.13）キャベツキムチ（9）緑茶の苔
+
+アレルギー情報
+1.卵 2.乳 3.そば 4.落花生 5.大豆 6.小麦 7.さば 8.かに 9.えび 10.豚肉 11.もも 12.トマト 13.亜硫酸塩 14.くるみ 15.鶏肉 16.牛肉 17.いか 18.貝類（かき・あわび・ムール貝を含む） 19.松の実
+
+※食事は学校の状況によって変更される可能性があります。</div><div class="err">메뉴 깨짐 · 0.1s</div></article>
+</div></div>
+<div class="lang"><h3>중국어(간체)</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill warn">79</span></header><div class="text">环保黑米饭
+
+蛤蜊菠菜酱油汤（5.6.18）
+
+大根生菜（5.6.13）
+
+辣酱鸭肉泡菜牛排（2.5.6.13）
+
+红薯汤（5.6.13）
+
+白菜泡菜 (9)
+
+绿茶无叶卷饼
+
+过敏原信息
+1.鸡蛋 2.牛奶 3.荞麦 4.花生 5.大豆 6.小麦 7.鲭鱼 8.蟹 9.虾 10.猪肉 11.桃 12.番茄 13.亚硫酸盐 14.核桃 15.鸡肉 16.牛肉 17.鱿鱼 18.贝类（包括牡蛎、鲍鱼、贻贝） 19.松子
+
+※饮食可能会因为学校的情况而改变。</div><div class="err">알레르기 정상, 짜장오리불고기→&#x27;鸭肉泡菜牛排&#x27;(소고기 추가) · 2.9s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">93</span></header><div class="text">环保黑米饭
+
+蛤蜊菠菜大酱汤 (5.6.18)
+
+哆啦A夢生菜 (5.6.13)
+
+炸酱鸭烤肉 (2.5.6.13)
+
+红薯味汤 (5.6.13)
+
+白菜泡菜 (9)
+
+绿茶萝卜包
+
+过敏原信息
+1.鸡蛋 2.牛奶 3.荞麦 4.花生 5.大豆 6.小麦 7.鲭鱼 8.蟹 9.虾 10.猪肉 11.桃 12.番茄 13.亚硫酸盐 14.核桃 15.鸡肉 16.牛肉 17.鱿鱼 18.贝类（包括牡蛎、鲍鱼、贻贝） 19.松子
+
+※菜单可能会根据学校情况而变更。</div><div class="err">알레르기 정상, &#x27;哆啦A夢生菜&#x27; · 0.4s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">70</span></header><div class="text">环保型Blackbeam Bobbigami Spinach（5.6.18）Dorajio Dori（5.6.13）Win Duck Fire（2.5.6.13）红薯（5.6.13）白菜泡菜（9）绿茶苔藓
+
+过敏原信息
+1.鸡蛋 2.牛奶 3.荞麦 4.花生 5.大豆 6.小麦 7.鲭鱼 8.蟹 9.虾 10.猪肉 11.桃 12.番茄 13.亚硫酸盐 14.核桃 15.鸡肉 16.牛肉 17.鱿鱼 18.贝类（包括牡蛎、鲍鱼、贻贝） 19.松子
+
+※学校情况可能会改变饮食。</div><div class="err">메뉴 깨짐, 일부 영어 · 0.1s</div></article>
+</div></div>
+</div></details>
+<details id="pre-school-notice-library-books"><summary><span class="cat">학교공지 · 전처리 후</span>학교도서관 정기도서 구입 예정 목록</summary><div class="body">
+<div class="lang"><h3>영어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">94</span></header><div class="text">We are posting materials that are scheduled to be purchased as the second semester textbooks for the 2026 academic year at our school library. Students, parents, and teachers who have any opinions are requested to refer to the following information and submit their comments.
+
+1. Posting period: 2026. 10. 1. (Thursday) ~ 2026. 10. 7. (Wednesday)
+
+2. How to submit opinions: Naver form
+
+※ If there is no other opinion, it will be purchased after deliberation by the School Library Operation Committee.
+
+※ The list may be modified because the books that will be received later will be purchased after deliberation by the School Library Operation Committee.</div><div class="err">요일 정상, &#x27;정기도서&#x27;→textbooks는 남음 · 4.1s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">98</span></header><div class="text">Our school library will post the materials scheduled to be purchased as the second regular book for the 2026 academic year, so students, parents, and faculty members who have opinions, please refer to the following contents and submit the opinion form.
+
+1. Posting period: 2026. 10. 1.( Thursday) ~ 2026. 10. 7.( Wednesday)
+
+2. How to submit an opinion: Naver form
+
+※ If there is no separate opinion, it will be purchased after deliberation by the school library steering committee.
+
+※ Books that will be received later are purchased through the deliberation of the school library steering committee, so the list may be modified.</div><div class="err">요일 정상 · 0.6s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">78</span></header><div class="text">Posted by the school library in our school library 2026, and posted materials that are scheduled to be purchased with the secondary regular book. Please submit your opinion by referring to the following. 1. Publication period: 2026. 10. 1. (Thursday) ~ 2026. 10. 7. (Wednesday) 2. How to submit your comments: Naver Foam ※ If there is no separate opinion, Scheduled for purchase. ※ The books that are listed in the future are purchased through the School Library Steering Committee deliberation, so the list may be modified.</div><div class="err">요일 정상, &#x27;Naver Foam&#x27; 등 남음 · 0.1s</div></article>
+</div></div>
+<div class="lang"><h3>베트남어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">94</span></header><div class="text">Thư viện trường chúng tôi xin đăng tải các tài liệu dự kiến sẽ được mua làm sách giáo khoa chính thức lần thứ hai cho năm học 2026, vì vậy các học sinh, phụ huynh và giáo viên có ý kiến vui lòng tham khảo nội dung sau và nộp bản kiến nghị.
+
+1. Thời gian đăng: 2026. 10. 1. (Thứ Năm) ~ 2026. 10. 7. (Thứ Tư)
+
+2. Cách nộp bản kiến nghị: Mẫu đơn Naver
+
+※ Nếu không có ý kiến riêng, dự kiến sẽ mua sau khi xem xét của Ủy ban vận hành thư viện trường học.
+
+※ Các cuốn sách sẽ được nhập kho sau này sẽ được mua sau khi được Ủy ban điều hành thư viện trường học xem xét, do đó danh sách có thể được sửa đổi.</div><div class="err">&#x27;교과서&#x27; 오역은 남음 · 4.6s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">98</span></header><div class="text">Thư viện trường học của chúng tôi sẽ đăng các tài liệu dự kiến sẽ được mua dưới dạng cuốn sách thông thường thứ hai cho năm học 2026, vì vậy học sinh, phụ huynh và giảng viên có ý kiến, vui lòng tham khảo các nội dung sau và gửi biểu mẫu ý kiến.
+
+1. Thời gian đăng: 2026. 10. 1. ( Thứ Năm) ~ 2026. 10. 7. ( Thứ Tư)
+
+2. Cách gửi ý kiến: Biểu mẫu Naver
+
+※ Nếu không có ý kiến riêng, nó sẽ được mua sau khi được ban chỉ đạo thư viện trường cân nhắc.
+
+※ Những cuốn sách sẽ nhận được sau này được mua thông qua sự cân nhắc của ban chỉ đạo thư viện trường học, vì vậy danh sách có thể được sửa đổi.</div><div class="err">요일 정상 · 1.1s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">70</span></header><div class="text">Được đăng bởi Thư viện trường học trong Thư viện trường học của chúng tôi 2026, và các tài liệu được đăng dự kiến sẽ được mua với cuốn sách thường xuyên thứ cấp. Vui lòng gửi ý kiến của bạn bằng cách đề cập đến các mục sau. 1. Thời gian xuất bản: 2026. 10. 10. (Thứ Năm) ~ 2026. 10. 7. (Thứ Tư) 2. Cách gửi ý kiến của bạn: Naver Bọt ※ Nếu không có ý kiến riêng biệt, dự kiến mua. ※ Những cuốn sách được liệt kê trong tương lai được mua thông qua sự cân nhắc của Ban chỉ đạo Thư viện Trường học, vì vậy danh sách có thể được sửa đổi.</div><div class="err">시작일 10일로 오역, &#x27;Naver Bọt&#x27; · 0.2s</div></article>
+</div></div>
+<div class="lang"><h3>인도네시아어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">95</span></header><div class="text">Perpustakaan sekolah kami mengunggah materi yang dijadwalkan dibeli sebagai buku teks reguler periode kedua tahun ajaran 2026, sehingga siswa, orang tua, dan tenaga pengajar yang memiliki pendapat diharapkan merujuk pada isi berikut dan mengirimkan surat pendapat.
+
+1. Periode publikasi: 2026. 10. 1. (Kamis) ~ 2026. 10. 7. (Rabu)
+
+2. Cara pengajuan surat pendapat: Formulir Naver
+
+※ Jika tidak ada pendapat tambahan, akan dibeli setelah pertimbangan oleh Komite Pengelolaan Perpustakaan Sekolah.
+
+※ Buku yang akan masuk nanti akan dibeli setelah disetujui oleh Komite Pengelolaan Perpustakaan Sekolah, sehingga daftar dapat diubah.</div><div class="err">&#x27;buku teks&#x27; 오역은 남음 · 4.6s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">99</span></header><div class="text">Perpustakaan sekolah kami akan memposting materi yang dijadwalkan untuk dibeli sebagai buku reguler kedua untuk tahun akademik 2026, jadi siswa, orang tua, dan anggota fakultas yang memiliki pendapat, silakan merujuk ke konten berikut dan kirimkan formulir pendapat.
+
+1. Periode posting: 2026. 10. 1. ( Kamis) ~ 2026. 10. 7. ( Rabu)
+
+2. Cara mengirimkan pendapat: Formulir Naver
+
+※ Jika tidak ada pendapat terpisah, itu akan dibeli setelah musyawarah oleh komite pengarah perpustakaan sekolah.
+
+※ Buku-buku yang akan diterima nanti dibeli melalui musyawarah komite pengarah perpustakaan sekolah, sehingga daftarnya dapat dimodifikasi.</div><div class="err">요일 정상 · 1.0s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">70</span></header><div class="text">Diposting oleh Perpustakaan Sekolah di Perpustakaan Sekolah kami 2026, dan diposting materi yang dijadwalkan untuk dibeli dengan buku reguler sekunder. Silakan kirimkan pendapat Anda dengan merujuk pada yang berikut. 1. Periode Publikasi: 2026. 10. 1. (Kamis) ~ 2026. 10. (Rabu) 2. Cara mengirimkan komentar Anda: NAVER FOAM ※ Jika tidak ada pendapat terpisah, dijadwalkan untuk dibeli. ※ Buku-buku yang tercantum di masa depan dibeli melalui musyawarah Komite Pengarah Perpustakaan Sekolah, sehingga daftar tersebut dapat dimodifikasi.</div><div class="err">종료일 누락, &#x27;NAVER FOAM&#x27; · 0.2s</div></article>
+</div></div>
+<div class="lang"><h3>일본어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">99</span></header><div class="text">当校図書館では、2026学年度第2次定期書籍として購入予定の資料を掲載いたしますので、意見のある学生、保護者、教職員の皆様は、以下の内容をご参照の上、意見書をご提出ください。
+
+1. 投稿期間：2026. 10. 1.（木曜日）～2026. 10. 7.（水曜日）
+
+2.意見書提出方法：ネイバーフォーム
+
+※別途意見がない場合、学校図書館運営委員会審議後購入予定。
+
+※後日入荷する書籍は学校図書館運営委員会審議を経て購入するためリストが修正されることがあります。</div><div class="err">변화 없음 · 3.6s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">97</span></header><div class="text">当校の図書館では、2026学年度第2回定期図書として購入予定の資料を掲載いたしますので、ご意見のある学生、保護者、教職員の皆様は、以下の内容をご参照の上、意見書をご提出くださいますようお願い申し上げます。
+
+1. 掲載期間：2026年。 10. 1.( 木曜日) ~ 2026. 10. 7.( 水曜日)
+
+2. 意見書の提出方法：Naverフォーム
+
+※ 別途意見がない場合は、学校図書館運営委員会の審議を経て購入する予定です。
+
+※ 今後入荷する書籍は、学校図書館運営委員会の審査を経て購入されるため、目録が修正されることがあります。</div><div class="err">요일 정상, &#x27;2026年。&#x27; · 0.6s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">65</span></header><div class="text">学校ライブラリー2026の学校図書館によって投稿され、二次の通常の本で購入される予定の資料。 以下を参照してあなたの意見を提出してください。 1.出版期間：2026.10.1.1.（木曜日）~2026.10.（水曜日）2。（水曜日）2。あなたのコメントを提出する方法：Naver foam※別の意見がない場合は、購入予定があります。 ※将来掲載されている本は、学校の図書館の運営委員会の審議を通じて購入されているので、リストは変更されることがあります。</div><div class="err">날짜 &#x27;2026.10.1.1.&#x27;, 종료일 누락 · 0.2s</div></article>
+</div></div>
+<div class="lang"><h3>중국어(간체)</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">99</span></header><div class="text">现在我校图书馆公布计划于2026学年度第二期定期图书中购买的资料，如有意见的学生、家长、教职员工请参考以下内容提交意见书。
+
+1. 发布期间：2026. 10. 1.（星期四）~ 2026. 10. 7.（星期三）
+
+2.意见书提交方法：Naver表单
+
+※如果没有其他意见的话，将在学校图书馆运营委员会审议后购买。
+
+※以后到货的书籍会经过学校图书馆运营委员会的审议后购买，所以列表可能会修改。</div><div class="err">변화 없음 · 3.6s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">98</span></header><div class="text">我们学校图书馆将发布2026学年第2次定期图书预定购买的资料，有意见的学生、家长、教职员工请参考以下内容提交意见书。
+
+1. 发布时间：2026。 10. 1.( 星期四) ~ 2026. 10. 7.（ 星期三）
+
+2. 提交意见书的方法：Naver表格
+
+※如果没有单独的意见，学校图书馆运营委员会审议后预定购买。
+
+※以后入库的图书经过学校图书馆运营委员会的审议后购买，所以目录可能会被修改。</div><div class="err">요일 정상 · 0.5s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">72</span></header><div class="text">由学校图书馆发布于我们学校图书馆2026年，并张贴于次要常规书籍购买的材料。 请提及以下内容提交您的意见。 1.出版期限：2026. 10. 1.（星期四）〜2026. 7. 7.（星期三）2.如何提交您的评论：Naver泡沫※如果没有单独的意见，计划购买。 ※未来上市的书籍通过学校图书馆指导委员会审议，所以可以修改清单。</div><div class="err">종료일 &#x27;2026. 7. 7.&#x27;로 오역 · 0.2s</div></article>
+</div></div>
+</div></details>
+<details id="pre-school-notice-robotics-challenge"><summary><span class="cat">학교공지 · 전처리 후</span>청소년 로보틱스 챌린지 참가 안내</summary><div class="body">
+<div class="lang"><h3>영어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">99</span></header><div class="text">Jeonju Yongwa Elementary School, which is promoting the 2026 AI Focus School, is hosting the “2026 Youth Robotics Challenge” preliminary competition for the Jeollabuk‑do region’s elementary school division, which is sponsored by the Ministry of Science and ICT and organized by the Korea Foundation for Science and Creativity, in support of various educational activities aimed at developing students’ AI and digital competencies and expanding AI education opportunities. Interested students and parents are requested to refer to the information below and the attached files.
+
+A. Event Name: 2026 Youth Robotics Challenge Jeollabuk-do Region Elementary School Division Preliminary Competition
+
+B. Date and time: 2026. 10. 14. (Wednesday) 2:00 PM~6:30 PM
+
+C. Place: Jeonju Yongwa Elementary School auditorium
+
+D. Participants: Elementary school students in grades 4~6 in Jeollabuk-do Special Self-Governing Province
+
+E. Number of applicants: About 100 people (first come, first served)
+
+F. Application period: Until 18:00 on October 8, 2026 (Thursday).
+
+G. How to participate: You can form a team of 3~4 people or apply individually as one person.
+
+H. Participation fee: Free (all equipment such as robots and notebooks will be provided on site, no separate preparation required)
+
+I. Main content: Basic robot and coding education, engineering mission &quot;Our Neighborhood Resource Collection Robot Challenge&quot;
+
+J. Application method: Online application through the website of the nationwide AI competition.
+
+K. Participant benefits: Issuance of certificates of completion to all participants, provision of snacks and souvenirs, opportunity for outstanding teams to participate in the finals.
+
+L. Inquiries: Office for the operation of the preliminary round of the Youth Robotics Challenge</div><div class="err">목록 기호 A.~L. 정상 · 10.2s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">89</span></header><div class="text">In relation to various educational activities to cultivate AI and digital capabilities of students and expand AI education opportunities in 2026, which is promoted by Jeonju Yongwa Elementary School, the Ministry of Science, Technology, Information and Communication and organized by the Korea Science and Creativity Foundation, the &quot;2026 Youth Robotics Challenge&quot; Jeonbuk Regional Elementary School Basic Qualifying Competition will be held. Interested students and parents, please refer to the following contents and the attached file.
+
+A. Event name: 2026 Youth Robotics Challenge Jeonbuk Regional Elementary School Basic Pre-election Competition
+
+B. Date and time: 2026. 10. 14.( Wednesday) 14:00~18:30
+
+C. Location: Jeonju Yongwa Elementary School Auditorium
+
+D. Participants: 4th to 6th grade students of elementary schools in Jeonbuk Special Self-Governing Province
+
+E. Number of recruits: around 100 (first-come, first-served basis)
+
+F. Application period: 2026. 10. 8.( Thursday) until 18:00
+
+G. How to participate: 3 to 4 people can form a team or 1 person can apply individually
+
+H. Participation fee: Free (all equipment such as robots and laptops is provided on site, no separate supplies)
+
+I. Main content: Basic robot and coding education, engineering mission &quot;Our neighborhood resource collection robot challenge&quot;
+
+J. How to apply: Online application through the National AI Contest website
+
+K. Participation benefits: All participants are issued certificates of completion, snacks and souvenirs are provided, and the opportunity to participate in the excellent team finals is provided.
+
+L. Inquiries: Youth Robotics Challenge Preliminary Operation Office</div><div class="err">목록 기호 정상, 첫 문장 주체 뒤섞임·&#x27;Pre-election&#x27;은 남음 · 1.0s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">48</span></header><div class="text">In the 2026 AI Fault School, which is pursued in Jeonju and Elementary School - Study on various educational activities to expand AI and digital capabilities and AI educational opportunities, the Science and Technology Information Communications Department is hosted and the Foundation of Korea Science Window Organized &quot;2026 Youth Robotics Challenge&quot; Jeonbuk Regional Elementary Department of Elementary Department of Elementary Department. Please refer to the following and attachments below. A. Date: 2026 Youth Robotics Challenge Jeonbuk Regional Elementary Division Basic Funds B. Date: 2026. 10. 14. (Wednesday) 14: 00 ~ 18: 30 C. Place: Jeonju Elementary School Dymourishment D. Participation: Jeonbuk Special Self-Governing Province Elementary School 4 to 6th Grade Students E. Recruitment Personnel: 100 people (recruiting first and second) F. Application period: 2026. 10. 8. (Thursday) 18:00 To participate: 1 Team composition: 3-4, 1 team configuration or one individual application H. Participation fee: Free (free of charge, not separately), etc.) I. Main contents: Basic Robot · Coding Education, Engineering Mission &quot;Our Neighborhood Resources Collection Robot Challenge&quot; J. Application Method: Online Applications through the National AI Gyeongjin Competition Homepage K. Participants Benefits: Providing participant power certificate, snacks and souvenirs, Excellent Team Main Line Contracting Opportunity L. Inquiry: Youth Robotics Challenge Qualifying Operation Secretariat</div><div class="err">목록 기호는 유지, &#x27;AI Fault School&#x27;, 학교명 소실 · 0.2s</div></article>
+</div></div>
+<div class="lang"><h3>베트남어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">93</span></header><div class="text">Về các hoạt động giáo dục đa dạng nhằm phát triển năng lực AI và kỹ năng số của học sinh cũng như mở rộng cơ hội học tập về AI tại Trường Tiểu học Jeonju Yongwa đang được triển khai, Bộ Khoa học và Công nghệ Thông tin và Truyền thông sẽ tài trợ và tổ chức Giải sơ bộ cấp cơ sở cho khu vực Jeollabuk-do thuộc hạng mục Tiểu học của &quot;Thử thách Robot học sinh tuổi teen 2026&quot;, do Quỹ Khám phá Khoa học Hàn Quốc chủ trì. Quý học sinh và phụ huynh quan tâm vui lòng tham khảo nội dung bên dưới và các tệp đính kèm.
+
+A. Tên sự kiện: Giải sơ bộ cơ bản khu vực tiểu học khu vực Jeollabuk-do của Thử thách Robot học cho Thanh thiếu niên năm 2026
+
+B. Thời gian: 2026. 10. 14. (Thứ Tư) 14:00~18:30
+
+C. Địa điểm: Hội trường trường tiểu học Jeonju Yongwa
+
+D. Đối tượng tham gia: Học sinh lớp 4~6 tiểu học trong phạm vi tỉnh tự trị đặc biệt Jeollabuk-do
+
+E. Số lượng tuyển dụng: khoảng 100 người (tuyển theo thứ tự đăng ký)
+
+F. Thời gian nộp đơn: đến 18:00 ngày 8/10/2026 (Thứ Năm)
+
+G. Cách tham gia: Có thể thành lập 1 đội gồm 3~4 người hoặc mỗi người có thể đăng ký riêng lẻ.
+
+H. Phí tham gia: Miễn phí (cung cấp tất cả thiết bị như robot, máy tính xách tay tại hiện trường, không cần chuẩn bị vật dụng riêng)
+
+I. Nội dung chính: Giáo dục robot và lập trình cơ bản, nhiệm vụ kỹ thuật 「Thử thách Robot thu gom tài nguyên trong khu phố của chúng ta」
+
+J. Cách đăng ký: Đăng ký trực tuyến qua trang web của Cuộc thi AI toàn quốc dành cho công dân.
+
+K. Ưu đãi tham gia: Phát hành chứng nhận hoàn thành cho tất cả người tham gia, cung cấp đồ ăn nhẹ và quà lưu niệm, cung cấp cơ hội tham gia vòng chung kết cho đội xuất sắc.
+
+L. Liên hệ: Văn phòng điều hành vòng sơ tuyển Thử thách Robot học cho Thanh thiếu niên</div><div class="err">목록 기호 정상, 첫 문장 주최 관계 뒤섞임 · 12.9s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">80</span></header><div class="text">Liên quan đến các hoạt động giáo dục khác nhau để trau dồi AI và khả năng kỹ thuật số của học sinh và mở rộng cơ hội giáo dục AI vào năm 2026, được thúc đẩy bởi Trường Tiểu học Jeonju Yongwa, Bộ Khoa học, Công nghệ, Thông tin và Truyền thông và được tổ chức bởi Quỹ Khoa học và Sáng tạo Hàn Quốc, &quot;Thử thách Robot Thanh niên 2026&quot; Cuộc thi Trình độ Cơ bản Trường Tiểu học Khu vực Jeonbuk sẽ được tổ chức. Học sinh và phụ huynh quan tâm, vui lòng tham khảo các nội dung sau và tệp đính kèm.
+
+Một. Tên sự kiện: Cuộc thi tiền bầu cử cơ bản của trường tiểu học khu vực Jeonbuk năm 2026
+
+B. Ngày và giờ: 2026. 10. Số 14. ( Thứ Tư) 14:00~18:30
+
+C. Địa điểm: Thính phòng trường tiểu học Jeonju Yongwa
+
+D. Những người tham gia: Học sinh lớp 4 đến lớp 6 của các trường tiểu học ở tỉnh tự trị đặc biệt Jeonbuk
+
+E. Số lượng tân binh: khoảng 100 (cơ sở ai đến trước được phục vụ trước)
+
+F. Thời gian nộp đơn: 2026. 10. Số 8. ( Thứ Năm) đến 18:00
+
+G. Cách tham gia: 3 đến 4 người có thể thành lập nhóm hoặc 1 người có thể đăng ký cá nhân
+
+H. Phí tham gia: Miễn phí (tất cả các thiết bị như robot và máy tính xách tay đều được cung cấp tại chỗ, không có nguồn cung cấp riêng)
+
+Tôi. Nội dung chính: Robot cơ bản và giáo dục mã hóa, nhiệm vụ kỹ thuật &quot;Thử thách robot thu thập tài nguyên khu phố của chúng tôi&quot;
+
+J. Cách đăng ký: Đăng ký trực tuyến thông qua trang web Cuộc thi AI Quốc gia
+
+K. Lợi ích tham gia: Tất cả những người tham gia đều được cấp giấy chứng nhận hoàn thành, đồ ăn nhẹ và quà lưu niệm được cung cấp, và cơ hội tham gia vào vòng chung kết đội xuất sắc được cung cấp.
+
+L. Thắc mắc: Văn phòng điều hành sơ bộ Thử thách Robot Thanh niên</div><div class="err">&#x27;Một.&#x27;, &#x27;Tôi.&#x27;(I.→나), 날짜에 &#x27;Số&#x27; 붙음 · 2.0s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">40</span></header><div class="text">Trong trường Lỗi AI năm 2026, được theo đuổi ở Jeonju và Trường tiểu học - nghiên cứu các hoạt động giáo dục khác nhau để mở rộng khả năng AI và kỹ thuật số và cơ hội giáo dục AI, bộ phận truyền thông thông tin khoa học và công nghệ được tổ chức và nền tảng của cửa sổ khoa học Hàn Quốc tổ chức &quot;2026 Thử thách Robot Robot Thanh niên&quot; Khoa Tiểu học Khu vực Jeonbuk của Bộ Ngoại giáo. Vui lòng tham khảo các tệp đính kèm sau đây dưới đây. A. NGÀY: 2026 Tuổi trẻ Thử thách Robotics Division Division Division Basic Basic B. Ngày: 2026. 10. 14. (Thứ Tư) 14: 00 ~ 18: 30 C. Địa điểm: Trường tiểu học Jeonju Dymourished D. Tham gia: Trường tiểu học Tỉnh Tỉnh Tỉnh Jeonbuk Trường học lớp 4 đến lớp 6 E. Nhân viên tuyển dụng: 100 người (Tuyển dụng đầu tiên và thứ hai) F. Thời gian nộp đơn: 2026. 10. 10. (Thứ năm) 18:00 để tham gia: 1 Thành phần của đội: 3-4, 1 Cấu hình nhóm hoặc một ứng dụng cá nhân H. phí tham gia: miễn phí (miễn phí, không riêng biệt), v.v.) I. Nội dung chính: Robot cơ bản · Giáo dục mã hóa, nhiệm vụ kỹ thuật &quot;Bộ sưu tập tài nguyên robot của chúng tôi J. Phương pháp ứng dụng: Ứng dụng trực tuyến thông qua quốc gia AI Gyeongjin Trang chủ cạnh tranh K. Người tham gia Lợi ích: Cung cấp giấy chứng nhận quyền lực, đồ ăn nhẹ và quà lưu niệm, đội chính của đội chính Hợp đồng cơ hội L. YÊU CẦU: Thử thách Robot của Tuổi trẻ Ban thư ký</div><div class="err">&#x27;A.&#x27;를 &#x27;NGÀY(날짜)&#x27;로 번역, 학교명 소실 · 0.3s</div></article>
+</div></div>
+<div class="lang"><h3>인도네시아어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">90</span></header><div class="text">Ditambahkan bahwa kegiatan ini akan diselenggarakan dengan dukungan dari &quot;Turnamen Lomba Dasar Bagian Dasar Sekolah Dasar Wilayah Jeollabuk-do&quot; &quot;Tantangan Robotika Remaja 2026&quot;, yang diselenggarakan oleh Kementerian Sains dan Teknologi Informasi serta Komunikasi dan diselenggarakan oleh Yayasan Sains dan Inovasi Korea, terkait berbagai kegiatan pendidikan yang dipimpin oleh Sekolah Dasar Jeonju Yongwa-cho untuk pengembangan kompetensi AI dan digital siswa serta memperluas kesempatan pendidikan AI pada tahun 2026. Siswa dan orang tua yang berminat diharapkan dapat merujuk pada informasi di bawah ini serta berkas lampiran.
+
+A. Nama Acara: Kompetisi Lomba Dasar Bagian Dasar Divisi Dasar Wilayah Jeollabuk-do Tantangan Robotika Remaja 2026
+
+B. Tanggal dan waktu: 2026. 10. 14. (Rabu) 14:00~18:30
+
+C. Tempat: Aula Sekolah Dasar Yongwa, Jeonju
+
+D. Sasaran peserta: siswa kelas 4~6 sekolah dasar di wilayah Provinsi Otonom Khusus Jeollabuk-do
+
+E. Jumlah pendaftar: sekitar 100 orang (pendaftaran berdasarkan urutan kedatangan)
+
+F. Periode pendaftaran: hingga 2026. 10. 8. (Kamis) 18:00
+
+G. Cara berpartisipasi: Dapat dibentuk tim dari 3~4 orang atau dapat mendaftar secara individual untuk 1 orang.
+
+H. Biaya partisipasi: Gratis (semua peralatan seperti robot dan laptop disediakan di lokasi, tidak perlu membawa barang tambahan)
+
+I. Isi utama: Pendidikan robotik dan pemrograman dasar, misi rekayasa &quot;Tantangan Robot Pengumpulan Sumber Daya Kelurahan Kita&quot;
+
+J. Cara pendaftaran: Pendaftaran daring melalui situs web Kompetisi AI untuk seluruh warga negara.
+
+K. Manfaat partisipasi: Penerbitan sertifikat kelulusan untuk seluruh peserta, penyediaan camilan dan oleh-oleh, serta kesempatan bagi tim unggulan untuk berpartisipasi di babak final.
+
+L. Pertanyaan: Kantor Operasional Tahap Pra-Putaran Tantangan Robotika Remaja</div><div class="err">목록 기호 정상, 첫 문장 깨짐은 남음 · 13.8s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">85</span></header><div class="text">Sehubungan dengan berbagai kegiatan pendidikan untuk menumbuhkan kemampuan AI dan digital siswa dan memperluas peluang pendidikan AI pada tahun 2026, yang dipromosikan oleh Sekolah Dasar Jeonju Yongwa, Kementerian Sains, Teknologi, Informasi dan Komunikasi dan diselenggarakan oleh Yayasan Sains dan Kreativitas Korea, &quot;Tantangan Robotika Pemuda 2026&quot; Kompetisi Kualifikasi Dasar Sekolah Dasar Sekolah Dasar Regional Jeonbuk akan diadakan. Siswa dan orang tua yang tertarik, silakan merujuk ke konten berikut dan file terlampir.
+
+A. Nama acara: Tantangan Robotika Pemuda 2026 Kompetisi Pra-pemilihan Dasar Sekolah Dasar Regional Jeonbuk
+
+B. Tanggal dan waktu: 2026. 10. 14. ( Rabu) 14:00~18:30
+
+C. Lokasi: Auditorium Sekolah Dasar Jeonju Yongwa
+
+D. Peserta: Siswa kelas 4 hingga 6 sekolah dasar di Provinsi Pemerintahan Sendiri Khusus Jeonbuk
+
+E. Jumlah rekrutan: sekitar 100 (yang pertama datang, pertama dilayani)
+
+F. Periode aplikasi: 2026. 10. 8. ( Kamis) sampai pukul 18:00
+
+G. Cara berpartisipasi: 3 hingga 4 orang dapat membentuk tim atau 1 orang dapat mendaftar secara individu
+
+H. Biaya partisipasi: Gratis (semua peralatan seperti robot dan laptop disediakan di lokasi, tidak ada persediaan terpisah)
+
+Saya. Konten utama: Robot dasar dan pendidikan pengkodean, misi teknik &quot;Tantangan robot pengumpulan sumber daya lingkungan kami&quot;
+
+J. Cara mendaftar: Aplikasi online melalui situs web Kontes AI Nasional
+
+K. Manfaat partisipasi: Semua peserta diberikan sertifikat penyelesaian, makanan ringan dan suvenir disediakan, dan kesempatan untuk berpartisipasi dalam final tim yang sangat baik disediakan.
+
+L. Pertanyaan: Kantor Operasi Awal Tantangan Robotika Pemuda</div><div class="err">&#x27;I.&#x27;를 &#x27;Saya(나)&#x27;로 번역, &#x27;Pra-pemilihan&#x27; · 1.7s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">40</span></header><div class="text">Di 2026 AI Fault School, yang dikejar di Jeonju dan Sekolah Dasar - Studi tentang berbagai kegiatan pendidikan untuk memperluas kemampuan AI dan Digital dan peluang pendidikan AI, Departemen Komunikasi Informasi Sains dan Teknologi diselenggarakan dan Yayasan Jendela Sains Korea terorganisir &quot;2026 Tantangan Robotika Pemuda&quot; Jeonbuk Departemen Dasar Dasar Departemen Dasar Departemen Dasar. Silakan merujuk ke berikut dan lampiran di bawah ini. A. Tanggal: 2026 Pemuda Robotika Tantangan Jeonbuk Dasar Dasar Dasar Dasar B. Tanggal: 2026. 10. (Rabu) 14: 00 ~ 18: 30 C. Tempat: Jeonbuk Dymebuk: Jeonbuk Provinsi Sekolah Dasar Provinsi Khusus Siswa 4 hingga 6 Mahasiswa Rekrutmen: 100 orang (Merekrut Pertama dan Kedua) F. Periode Aplikasi: 2026. 10. (Kamis) 18:00 Untuk berpartisipasi: 1 Komposisi Tim: 1 individu atau satu individu Aplikasi H. Biaya Partisipasi: Gratis (gratis, tidak secara terpisah), dll.) I. Isi Utama: Robot Dasar · Pendidikan Pengkodean, Misi Teknik kami Koleksi Sumber Daya Kami Tantangan Robot &quot;J. Metode Aplikasi: Aplikasi Online Ai Gyeongjin K. K. Peserta Manfaat: Menyediakan Sertifikat Daya Peserta, Makanan Ringan dan Souvenir, Peluang Kontraktor Utama Tim Utama Tim yang Sangat Baik L. Permintaan: Pemuda Robotika Tantang Sekretariat Operasi Kualifikasi</div><div class="err">학교명 소실, 행사명 반복 · 0.4s</div></article>
+</div></div>
+<div class="lang"><h3>일본어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">94</span></header><div class="text">全州用和小学校で推進している2026年AI重点学校－生徒のAI・デジタル能力の育成とAI教育機会の拡大のための様々な教育活動に関連し、科学技術情報通信部が主催し韓国科学創造財団が主宰する「2026年青少年ロボティクスチャレンジ」全北地域小学部門基礎予選大会を後援して開催するとされています。関心のある生徒と保護者の皆様は、以下の内容および添付ファイルをご参照ください。
+
+A. 行事名：2026年青少年ロボティクスチャレンジ全羅北道地域小中学校部基礎予選大会
+
+B. 日時：2026. 10. 14.(水曜日) 14:00~18:30
+
+C.場所：全州ヨンワ小学校講堂
+
+D.参加対象：全北特別自治道管内小学校4～6年生の生徒
+
+E.募集人員：100名前後（先着順募集）
+
+F. 申請期間：2026. 10. 8.(木曜日) 18:00まで
+
+G.参加方法：3～4人1チーム構成または1人個別申請可能
+
+H.参加費：無料（ロボット・ノートパソコン等全ての設備現場提供、別途準備物なし）
+
+I. 主な内容：基礎ロボット・コーディング教育、エンジニアリングミッション「うちの近所の資源収集ロボットチャレンジ」
+
+J. 申請方法：全国民AI競演大会ホームページを通じたオンライン申請
+
+K. 参加特典：参加者全員に修了証の発行、軽食および記念品の提供、優秀チームの本戦参加機会の提供
+
+L.お問い合わせ：青少年ロボティクスチャレンジ予選運営事務局</div><div class="err">목록 기호 정상, &#x27;小中学校部&#x27;는 남음 · 9.9s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">98</span></header><div class="text">全州用和小学校が推進している2026年AI重点校―学生のAI・デジタル能力の育成とAI教育機会拡大を目的とした様々な教育活動に関し、科学技術情報通信部が主催し、韓国科学創造財団が主催する「2026年青少年ロボティクスチャレンジ」全北地域小学校部基礎予選大会を後援して開催するとのことです。 ご関心のある学生および保護者の皆様は、以下の内容および添付ファイルをご参照ください。
+
+A. イベント名：2026年青少年ロボティクスチャレンジ全北地域小学校部門基礎予選大会
+
+B. 日時: 2026. 10. 14.( 水曜日) 14:00~18:30
+
+C. 場所：全州用和小学校講堂
+
+D. 参加対象：全羅北道特別自治道の小学校4〜6年生
+
+E. 募集人数：100名前後（先着順募集）
+
+F. 申請期間：2026年。 10. 8.( 木曜日）18:00まで
+
+G. 参加方法：3〜4名で1チーム構成、または1名個別に申し込むことが可能です
+
+H. 参加費：無料（ロボットやノートパソコン等、すべての機材を現場で提供、別途用意物はありません）
+
+I. 主な内容：基礎ロボット・コーディング教育、エンジニアリングミッション「私たちの街の資源回収ロボットチャレンジ」
+
+J. 申し込み方法：全国民AIコンテストのホームページを通じたオンライン申し込み
+
+K. 参加特典：参加者全員に修了証を発行し、軽食や記念品を提供し、優秀チームの本選への参加機会を提供します
+
+L. お問い合わせ：青少年ロボティクスチャレンジ予選運営事務局</div><div class="err">&#x27;2026年。&#x27; 날짜 깨짐 · 1.2s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">30</span></header><div class="text">2026年のAI断層学校では、エオンジュと小学校で追求されています -  AIとデジタル機能を拡大するためのさまざまな教育活動に関する研究、科学技術情報通信部、科学技術情報通信部が主催され、韓国科学ウィンドウの基盤が開催されます。2026年青少年ロボティクスチャレンジ &quot;Eionbuk Regional小学校小学校小学校小学校小学校学科。 以下の以下の添付ファイルを参照してください。 A.日付：2026青少年ロボティクスチャレンジJeonbuk地域小学校課基本資金B.日付：2026.10.14.（水曜日）14：00~18：30 C. jeonju小学校キミオッシュD.参加：エオンブク特別自治省小学校4年生4年生4年生4年生4年生4年生E.採用担当者：100人（第一と第二と第二）F.申請期間：2026. 10.（木曜日）18:00に参加する：1チーム構成：3-4,1チーム構成または1つの個々のアプリケーションH。参加料：無料（別途別途）など）など）。Homepage K.参加者の利点：参加者の電力証明書、スナック、お土産の提供、優れたチーム本線契約会社契約会社協議：ユースロボティクスチャレンジ予選事務局</div><div class="err">&#x27;4年生&#x27;이 여섯 번 반복되는 등 더 깨짐 · 0.3s</div></article>
+</div></div>
+<div class="lang"><h3>중국어(간체)</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">99</span></header><div class="text">关于全州龙和小学正在推进的2026年AI重点学校——旨在培养学生AI·数字能力并扩大AI教育机会的各种教育活动，科学技术信息通信部主办、韩国科学创意基金会主导的《2026年青少年机器人挑战》全罗北道地区小学部基础预选赛将获得赞助举办。有兴趣的学生和家长请参考以下内容及附件文件。
+
+A. 活动名称：2026年青少年机器人挑战全罗北道地区小学部基础预选赛
+
+B. 日期时间：2026. 10. 14.(星期三) 14:00~18:30
+
+C.地点：全州龙和小学的礼堂
+
+D.参加对象：全罗北道管内小学4~6年级学生
+
+E. 招聘人数：100人左右（先到先得）
+
+F. 申请期间：2026. 10. 8.(星期四) 18:00前
+
+G.参加方法：3~4人组成1个团队，或1人单独申请
+
+H.参加费：免费（提供机器人·笔记本电脑等所有设备现场，无需另行准备物品）
+
+I.主要内容：基础机器人·编程教育，工程任务“我们社区资源收集机器人挑战”
+
+J.申请方法：通过全国民AI竞赛大会官网的在线申请
+
+K. 参赛福利：向所有参赛者发放结业证书，提供零食及纪念品，提供优秀团队参加决赛的机会
+
+L.咨询：青少年机器人挑战预选运营办公室</div><div class="err">목록 기호 정상 · 8.9s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">98</span></header><div class="text">全州龙和小学正在推进的2026年AI重点学校-为了培养学生的AI·数字能力和扩大AI教育机会的各种教育活动，由科学技术信息通信部主办，韩国科学创意基金会主管的“2026年青少年机器人挑战赛”全北地区小学部门基础预选赛将赞助举办。 感兴趣的学生和家长请参考以下内容及附件。
+
+A. 活动名称：2026年青少年机器人挑战赛全北地区小学部门基础预选大赛
+
+B. 时间：2026。 10. 14.（ 星期三) 14:00~18:30
+
+C. 地点：全州龙和小学礼堂
+
+D. 参加对象：全北特别自治道管内小学4~6年级学生
+
+E. 招募人数：100人左右（先到先得）
+
+F. 申请期限：2026。 10. 8.（ 星期四）18:00之前
+
+G. 参加方法：3~4人1组或1人可以单独申请
+
+H. 参加费：免费（机器人、笔记本电脑等所有设备现场提供，无单独准备物）
+
+I. 主要内容：基础机器人·编码教育，工程任务“我们小区资源收集机器人挑战”
+
+J. 申请方法：通过全民AI大赛主页在线申请
+
+K。 参加优惠：参加者全员颁发结业证，提供零食和纪念品，提供参加优秀团队总决赛的机会
+
+L. 咨询：青少年机器人挑战赛预选运营事务局</div><div class="err">&#x27;K。&#x27;, &#x27;2026。&#x27; 사소한 표기 · 1.0s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">40</span></header><div class="text">在2026年的AI故障学校，这是在井州和小学的研究 - 研究各种教育活动，以扩大AI和数字能力和AI教育机会，科学和技术信息通信部门举办，韩国科学橱窗组织“2026”青年机器人挑战“小学院业小学院初级小学部。 请参阅以下内容和附件。 答：日期：2026年青年机器人挑战Jeonbuk地区小学基本资金B.日期：2026.14 .14。（星期三）14：00〜18：30 C.地点：Jeonju小学间日期Dymourishment D.参与：Jeonbuk特殊自治省小学4至6年级学生E.招聘人员：100人（招聘第一和二）F.应用程序期：2026. 8.（星期四）18:00参加：1队成分：3-4，1队配置或一个个人申请H.参与费用：免费（免费，不分别）等）I。主要内容：基本机器人·编码教育，工程使命“我们的邻居资源收集机器人挑战”J.应用方法：通过国家艾庆金竞争主页K.参与者福利：提供参与者的电力证明，零食和纪念品，优秀团队主线承包机会L.咨询：青年机器人挑战资格赛秘书处</div><div class="err">학교명 &#x27;井州&#x27;, 날짜 &#x27;2026.14 .14&#x27; · 0.4s</div></article>
+</div></div>
+</div></details>
+</section>
+<section><h2>예시글·언어별 점수 (전처리 전)</h2><div class="tbl"><table><thead><tr><th>예시글</th><th>언어</th><th>Apple Intelligence</th><th>Apple 기본 모델</th><th>ML Kit</th><th>Google 번역 (클라우드)</th></tr></thead><tbody>
+<tr><td rowspan="5"><span class="meta">가정통신문</span><br>초등 고학년 과학 체험교육 안내</td><td>영어</td><td class="sc good">97</td><td class="sc good">93</td><td class="sc warn">80</td><td class="sc good">98</td></tr>
+<tr><td>베트남어</td><td class="sc good">97</td><td class="sc warn">88</td><td class="sc warn">80</td><td class="sc good">98</td></tr>
+<tr><td>인도네시아어</td><td class="sc good">98</td><td class="sc good">93</td><td class="sc warn">80</td><td class="sc good">98</td></tr>
+<tr><td>일본어</td><td class="sc good">99</td><td class="sc good">98</td><td class="sc warn">74</td><td class="sc good">99</td></tr>
+<tr><td>중국어(간체)</td><td class="sc good">99</td><td class="sc good">99</td><td class="sc warn">79</td><td class="sc good">99</td></tr>
+<tr><td rowspan="5"><span class="meta">가정통신문</span><br>AI·디지털 꿈 놀이터 행사 안내</td><td>영어</td><td class="sc good">93</td><td class="sc warn">89</td><td class="sc bad">69</td><td class="sc good">99</td></tr>
+<tr><td>베트남어</td><td class="sc warn">89</td><td class="sc warn">89</td><td class="sc bad">65</td><td class="sc good">98</td></tr>
+<tr><td>인도네시아어</td><td class="sc good">94</td><td class="sc warn">89</td><td class="sc bad">60</td><td class="sc good">99</td></tr>
+<tr><td>일본어</td><td class="sc good">94</td><td class="sc good">91</td><td class="sc bad">60</td><td class="sc good">98</td></tr>
+<tr><td>중국어(간체)</td><td class="sc good">93</td><td class="sc warn">89</td><td class="sc bad">55</td><td class="sc good">98</td></tr>
+<tr><td rowspan="5"><span class="meta">급식</span><br>10월 7일 (수) 급식</td><td>영어</td><td class="sc warn">71</td><td class="sc bad">69</td><td class="sc bad">45</td><td class="sc good">99</td></tr>
+<tr><td>베트남어</td><td class="sc bad">29</td><td class="sc bad">64</td><td class="sc bad">35</td><td class="sc warn">88</td></tr>
+<tr><td>인도네시아어</td><td class="sc bad">20</td><td class="sc bad">64</td><td class="sc bad">30</td><td class="sc good">97</td></tr>
+<tr><td>일본어</td><td class="sc bad">15</td><td class="sc bad">62</td><td class="sc bad">20</td><td class="sc good">99</td></tr>
+<tr><td>중국어(간체)</td><td class="sc warn">73</td><td class="sc warn">82</td><td class="sc bad">35</td><td class="sc good">93</td></tr>
+<tr><td rowspan="5"><span class="meta">급식</span><br>10월 6일 (화) 급식</td><td>영어</td><td class="sc bad">55</td><td class="sc bad">68</td><td class="sc bad">40</td><td class="sc good">99</td></tr>
+<tr><td>베트남어</td><td class="sc bad">20</td><td class="sc bad">68</td><td class="sc bad">30</td><td class="sc good">96</td></tr>
+<tr><td>인도네시아어</td><td class="sc bad">15</td><td class="sc bad">68</td><td class="sc bad">20</td><td class="sc good">96</td></tr>
+<tr><td>일본어</td><td class="sc bad">20</td><td class="sc bad">68</td><td class="sc bad">15</td><td class="sc good">99</td></tr>
+<tr><td>중국어(간체)</td><td class="sc bad">63</td><td class="sc warn">83</td><td class="sc bad">30</td><td class="sc good">98</td></tr>
+<tr><td rowspan="5"><span class="meta">학교공지</span><br>학교도서관 정기도서 구입 예정 목록</td><td>영어</td><td class="sc good">94</td><td class="sc good">93</td><td class="sc warn">75</td><td class="sc good">98</td></tr>
+<tr><td>베트남어</td><td class="sc good">94</td><td class="sc good">93</td><td class="sc warn">70</td><td class="sc good">98</td></tr>
+<tr><td>인도네시아어</td><td class="sc good">95</td><td class="sc good">94</td><td class="sc warn">70</td><td class="sc good">98</td></tr>
+<tr><td>일본어</td><td class="sc good">99</td><td class="sc good">93</td><td class="sc warn">70</td><td class="sc good">99</td></tr>
+<tr><td>중국어(간체)</td><td class="sc good">99</td><td class="sc good">93</td><td class="sc warn">75</td><td class="sc good">99</td></tr>
+<tr><td rowspan="5"><span class="meta">학교공지</span><br>청소년 로보틱스 챌린지 참가 안내</td><td>영어</td><td class="sc good">94</td><td class="sc warn">84</td><td class="sc bad">45</td><td class="sc good">97</td></tr>
+<tr><td>베트남어</td><td class="sc warn">88</td><td class="sc warn">80</td><td class="sc bad">40</td><td class="sc good">99</td></tr>
+<tr><td>인도네시아어</td><td class="sc warn">85</td><td class="sc warn">84</td><td class="sc bad">40</td><td class="sc good">99</td></tr>
+<tr><td>일본어</td><td class="sc warn">89</td><td class="sc good">93</td><td class="sc bad">40</td><td class="sc good">99</td></tr>
+<tr><td>중국어(간체)</td><td class="sc good">94</td><td class="sc good">94</td><td class="sc bad">40</td><td class="sc good">98</td></tr>
+</tbody></table></div></section>
+<section><h2>번역 원문과 오류</h2><p class="note">예시글을 펼치면 한국어 원문과 언어별 번역 3개, 점수, 찾은 오류를 볼 수 있습니다.</p>
+<details id="home-letter-science-experience"><summary><span class="cat">가정통신문</span>초등 고학년 과학 체험교육 안내</summary><div class="body">
+<div class="lang"><h3>한국어 원문</h3><pre class="src">전주교육지원청에서는 초등학생(4~6학년) 자녀와 학부모가 함께 일상에서 과학의 원리를 배우고 만들며 체험하는 교육을 실시하니, 관심 있는 학부모들의 많은 신청 바랍니다. (중복신청 가능)
+
+1. 10. 17.(토) 교육
+2. 10. 31.(토) 교육
+
+신청은 전주교육지원청 누리집의 전주학부모교육 &gt; 교육신청 메뉴에서 할 수 있습니다.</pre></div>
+<div class="lang"><h3>영어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">97</span></header><div class="text">Jeonju Education Support Office is conducting education where elementary school students (grades 4–6) and their parents learn, create, and experience the principles of science in everyday life together, so we kindly ask interested parents to apply in large numbers. (Multiple applications are possible)
+
+1. 10. 17.(Sat) Education
+
+2. 10. 31.(Saturday) Education
+
+Applications can be made from the Jeonju Parents Education &gt; Education Application menu on the Jeonju Education Support Office website.</div><div class="err">&#x27;apply in large numbers&#x27; 어색 · 4.2s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">93</span></header><div class="text">The Jeonju Education Support Office conducts education for elementary school children (4th to 6th grade) and parents to learn and experience the principles of science in their daily lives, so please apply if you are interested. (Dreplicate application is possible)
+
+1. 10. 17.( Sat) Education
+
+2. 10. 31.( Sat) Education
+
+You can apply from the Jeonju Parent Education &gt; Education Application menu on the Jeonju Education Support Office website.</div><div class="err">&#x27;Dreplicate&#x27; 깨진 단어, &#x27;만들며&#x27; 누락 · 0.6s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">80</span></header><div class="text">In the Jeonju Education Support Agency, elementary school students (4 to 6th grade) Children and parents will learn and experience the principles of science in their daily life, and apply for many of the parents of interest. (Duplicate Applicationable) 1. 10. 17. (Saturday) Education 2. 10. 31. (Saturday) Education Application may be in the Jeonju Department of Parent Training of the Jeonju Education Support Agency&gt; Education Application Menu.</div><div class="err">줄바꿈 소실, &#x27;많은 신청 바랍니다&#x27;를 &#x27;관심 있는 부모 다수에 지원&#x27;으로 오역, &#x27;Applicationable&#x27; · 0.1s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">98</span></header><div class="text">The Jeonju Office of Education is offering an educational program where elementary school students (grades 4–6) and their parents can learn scientific principles through hands-on activities and making projects together. We invite interested parents to sign up. (Multiple registrations are permitted.)
+
+1. Session on Oct. 17 (Sat.)
+2. Session on Oct. 31 (Sat.)
+
+You can register via the Jeonju Office of Education website under the menu: Jeonju Parent Education &gt; Course Registration.</div><div class="err">&#x27;일상에서&#x27; 누락</div></article>
+</div></div>
+<div class="lang"><h3>베트남어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">97</span></header><div class="text">Trường học hỗ trợ giáo dục Jeonju đang tổ chức chương trình giáo dục cho học sinh tiểu học (lớp 4~6) và phụ huynh cùng nhau học hỏi, thực hành và trải nghiệm các nguyên lý khoa học trong cuộc sống hàng ngày, vì vậy mong nhận được nhiều đơn đăng ký từ các phụ huynh quan tâm. (Có thể đăng ký trùng lặp)
+
+1. 17/10 (Thứ Bảy) Giáo dục
+
+2. 31/10 (Thứ Bảy) Giáo dục
+
+Bạn có thể nộp đơn đăng ký tại mục Giáo dục phụ huynh Jeonju &gt; Đăng ký giáo dục trên trang web của Sở Giáo dục và Hỗ trợ Giáo dục Jeonju.</div><div class="err">기관명 표기 불일치 · 3.4s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">88</span></header><div class="text">Văn phòng Hỗ trợ Giáo dục Jeonju tiến hành giáo dục cho trẻ em tiểu học (thiểu học đến lớp 4) và phụ huynh để học và trải nghiệm các nguyên tắc khoa học trong cuộc sống hàng ngày của họ, vì vậy hãy đăng ký nếu bạn quan tâm. (Có thể áp dụng Driplicate)
+
+1. 10. 17. ( Sat) Giáo dục
+
+2. 10. 31. ( Sat) Giáo dục
+
+Bạn có thể đăng ký từ menu Giáo dục Phụ huynh Jeonju &gt; Đơn đăng ký Giáo dục trên trang web Văn phòng Hỗ trợ Giáo dục Jeonju.</div><div class="err">&#x27;4~6학년&#x27;을 &#x27;4학년까지&#x27;로 오역, &#x27;Driplicate&#x27; · 1.0s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">80</span></header><div class="text">Trong Cơ quan hỗ trợ giáo dục Jeonju, học sinh tiểu học (lớp 4 đến 6) trẻ em và phụ huynh sẽ học hỏi và trải nghiệm các nguyên tắc của khoa học trong cuộc sống hàng ngày của họ và áp dụng cho nhiều phụ huynh quan tâm. (Ứng dụng trùng lặp) 1. 10. 17. (Thứ Bảy) Giáo dục 2. 10. 31. Ứng dụng giáo dục (Thứ Bảy) có thể ở Khoa Đào tạo Phụ huynh Jeonju của Cơ quan Hỗ trợ Giáo dục Jeonju&gt; Menu ứng dụng Giáo dục.</div><div class="err">줄바꿈 소실, 신청 독려 문장 오역, 두 번째 날짜 뒤섞임 · 0.3s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">98</span></header><div class="text">Sở Giáo dục Thành phố Jeonju đang tổ chức các chương trình giáo dục, nơi học sinh tiểu học (lớp 4-6) và phụ huynh có thể cùng nhau học hỏi, sáng tạo và trải nghiệm các nguyên lý khoa học trong cuộc sống hàng ngày. Chúng tôi khuyến khích các bậc phụ huynh quan tâm đăng ký tham gia. (Có thể đăng ký nhiều lần)
+
+1. Ngày 17 tháng 10 (Thứ Bảy) Giáo dục
+
+2. Ngày 31 tháng 10 (Thứ Bảy) Giáo dục
+
+Đăng ký có thể được thực hiện thông qua mục Giáo dục Phụ huynh Jeonju &gt; Đăng ký Giáo dục trên trang web của Sở Giáo dục Thành phố Jeonju.</div><div class="err">좋음 (불필요한 빈 줄)</div></article>
+</div></div>
+<div class="lang"><h3>인도네시아어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">98</span></header><div class="text">Kantor Dukungan Pendidikan Jeonju mengadakan program pendidikan di mana anak-anak siswa SD (kelas 4-6) dan orang tua bersama-sama mempelajari, menerapkan, dan mengalami prinsip-prinsip sains dalam kehidupan sehari-hari. Kami sangat mengharapkan banyak pendaftaran dari orang tua yang berminat. (Pendaftaran ganda diperbolehkan)
+
+1. 17.10. (Sabtu) Pendidikan
+
+2. 31.10. (Sabtu) Pendidikan
+
+Pendaftaran dapat dilakukan melalui menu Pendidikan Orang Tua Jeonju &gt; Pendaftaran Pendidikan di situs web Dinas Pendidikan dan Dukungan Jeonju.</div><div class="err">&#x27;만들며&#x27;를 &#x27;menerapkan&#x27;으로 옮김 · 3.8s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">93</span></header><div class="text">Kantor Dukungan Pendidikan Jeonju melakukan pendidikan untuk anak-anak sekolah dasar (kelas 4 hingga 6) dan orang tua untuk mempelajari dan mengalami prinsip-prinsip sains dalam kehidupan sehari-hari mereka, jadi silakan mendaftar jika Anda tertarik. (Aplikasi driplicate dimungkinkan)
+
+1. 10. 17. ( Sat) Pendidikan
+
+2. 10. 31. ( Sat) Pendidikan
+
+Anda dapat mendaftar dari menu Pendidikan Orang Tua Jeonju &gt; Aplikasi Pendidikan di situs web Kantor Dukungan Pendidikan Jeonju.</div><div class="err">&#x27;driplicate&#x27;, 요일 미번역(Sat) · 0.8s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">80</span></header><div class="text">Di Badan Dukungan Pendidikan Jeonju, siswa sekolah dasar (kelas 4 hingga 6) anak-anak dan orang tua akan belajar dan mengalami prinsip-prinsip sains dalam kehidupan sehari-hari mereka, dan melamar banyak orang tua yang menarik. (Duplikat Application) 1. 10. 17. (Sabtu) Pendidikan 2. 10. 31. (Sabtu) Aplikasi Pendidikan mungkin di Departemen Jeonju dari Pelatihan Induk Badan Dukungan Pendidikan Jeonju&gt; Menu Aplikasi Pendidikan.</div><div class="err">&#x27;관심 있는 매력적인 부모에게 지원&#x27;으로 오역, 줄바꿈 소실 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">98</span></header><div class="text">Dinas Pendidikan Jeonju menyelenggarakan program pendidikan di mana siswa sekolah dasar (kelas 4–6) dan orang tua mereka dapat belajar, berkreasi, dan mengalami prinsip-prinsip sains bersama dalam kehidupan sehari-hari. Kami mendorong orang tua yang berminat untuk mendaftar. (Pendaftaran ganda diperbolehkan)
+
+1. 17 Oktober (Sabtu)
+
+2. 31 Oktober (Sabtu)
+
+Pendaftaran dapat dilakukan melalui menu Pendidikan Orang Tua Jeonju &gt; Aplikasi Pendidikan di situs web Dinas Pendidikan Jeonju.</div><div class="err">날짜 뒤의 &#x27;교육&#x27; 누락</div></article>
+</div></div>
+<div class="lang"><h3>일본어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">99</span></header><div class="text">全州教育支援庁では、小学生（4〜6年生）の子供と保護者が一緒に日常で科学の原理を学び、作り、体験する教育を実施しているので、関心のある保護者の多くのご応募をお願いいたします。（重複応募可能）
+
+1. 10. 17.(土) 教育
+
+2. 10. 31.(土)教育
+
+申請は全州教育支援庁のホームページの全州保護者教育＞教育申請メニューでできます。</div><div class="err">좋음 · 2.6s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">98</span></header><div class="text">全州教育支援庁では、小学生（4〜6年生）の子どもと保護者が日常で科学の原理を学び、作り、体験する教育を実施しておりますので、関心のある保護者の皆様のご応募をぜひお願いいたします。 （重複申請可能）
+
+1. 10. 17.( 土) 教育
+
+2. 10. 31.( 土) 教育
+
+申請は、全州教育支援庁のウェブサイトの全州学部保護者教育 &gt; 教育申請メニューから行うことができます。</div><div class="err">&#x27;全州学部保護者教育&#x27; 불필요한 단어 · 0.6s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">74</span></header><div class="text">Jeonju教育支援機関では、小学生（4年生4年生）の子供と両親は、日常生活の中で科学の原則を学び、経験し、興味のある人の多くに応募します。 （PLAPLICATEDABLE）1。10. 17.（土曜日）教育2. 10.（土曜日）Jeonju教育支援代理店の親トレーニング&gt;教育申請メニューの中央育成省にある場合があります。</div><div class="err">&#x27;4年生4年生&#x27;, &#x27;PLAPLICATEDABLE&#x27;, 31일 날짜 누락, 마지막 문장 의미 없음 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">99</span></header><div class="text">全州（チョンジュ）教育支援庁では、小学生（4～6年生）のお子様と保護者が共に、日常生活の中で科学の原理を学び、製作・体験できる教育プログラムを実施いたします。関心をお持ちの保護者の皆様の多数のお申し込みをお待ちしております。（重複申し込みも可能です）
+
+1. 10月17日（土）の教育
+2. 10月31日（土）の教育
+
+お申し込みは、全州教育支援庁ウェブサイトの「全州保護者教育（전주학부모교육）」＞「教育申し込み（교육신청）」メニューから行えます。</div><div class="err">좋음 (메뉴명에 한국어 병기)</div></article>
+</div></div>
+<div class="lang"><h3>중국어(간체)</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">99</span></header><div class="text">全州教育支援厅正在为小学学生（4~6年级）的子女和家长开展在日常生活中学习、创造和体验科学原理的教育，敬请有兴趣的家长踊跃报名。（可重复报名）
+
+1. 10. 17.(周六)教育
+
+2. 10. 31.(周六)教育
+
+申请可以在全州教育支援厅的网站的全州家长教育&gt;教育申请菜单中进行。</div><div class="err">좋음 · 2.5s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">99</span></header><div class="text">全州教育支援厅为小学生（4~6年级）子女和家长进行在日常生活中一起学习、制作和体验科学原理的教育，希望有兴趣的家长们多多申请。 （可以重复申请）
+
+1. 10. 17.（ 周六）教育
+
+2. 10. 31.（ 周六）教育
+
+申请可以在全州教育支援厅网站的全州家长教育&gt;教育申请菜单上进行。</div><div class="err">괄호 앞 공백 · 0.5s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">79</span></header><div class="text">在Jeonju教育支助机构，小学生（4至6年级）儿童和父母将学习并体验日常生活中科学原则，并申请许多感兴趣的父母。 （重复申请）1. 10.17。（星期六）教育2. 10.（星期六）教育申请可能在Jeonju培训主培训机构&gt;教育申请书表中。</div><div class="err">신청 독려 문장 오역, 31일 날짜 누락, 줄바꿈 소실 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">99</span></header><div class="text">全州市教育厅正在举办一系列教育项目，旨在让小学生（4-6年级）及其家长在日常生活中共同学习、创造和体验科学原理。我们鼓励感兴趣的家长积极申请。（允许多次申请）
+
+1. 10月17日（周六）教育项目
+
+2. 10月31日（周六）教育项目
+
+申请可通过全州市教育厅网站“全州市家长教育 &gt; 教育项目申请”菜单进行。</div><div class="err">좋음</div></article>
+</div></div>
+</div></details>
+<details id="home-letter-ai-digital-playground"><summary><span class="cat">가정통신문</span>AI·디지털 꿈 놀이터 행사 안내</summary><div class="body">
+<div class="lang"><h3>한국어 원문</h3><pre class="src">영만초등학교에서 전북 도내 초등학생의 AI·디지털 역량 함양을 위해 「2026 AI·디지털 꿈놀이터」를 운영한다고 합니다. 관심 있는 학생과 학부모님께서는 아래의 내용을 확인해주시고, 자세한 사항은 첨부 문서를 확인해주시기 바랍니다.
+
+가. 행사명: 2026 AI·디지털 꿈 놀이터
+나. 행사일시: 2026. 10. 24.(토) 09시 00분 ~ 12시 10분
+다. 대상 및 인원: 전북특별자치도내 초등학생 총 72명 내외
+※ 저학년(1-3학년) 36명, 고학년(4-6학년) 36명
+라. 행사 장소: 영만초등학교 (08:30-08:50 1층 시청각실 등록)
+마. 신청 기한: 2026. 10. 1.(목) 09:00 ~ 2026. 10. 9.(금)
+바. 신청 방법: 온라인 신청서 제출</pre></div>
+<div class="lang"><h3>영어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">93</span></header><div class="text">Yeongman Elementary School will operate the “2026 AI·Digital Dream Playground” to develop elementary school students throughout Jeollabuk-do’s AI and digital skills. Interested students and parents, please review the information below, and please check the attached document for detailed information.
+
+A. Event name: 2026 AI·Digital Dream Playground
+
+Me. Event date and time: 2026. 10. 24. (Sat) 9:00 AM ~ 12:10 PM
+
+All. Target and number of people: About 72 elementary school students in Jeollabuk-do Special Self-Governing Province
+
+※ 36 students in lower grades (1-3 grades), 36 students in higher grades (4-6 grades)
+
+Ra. Event venue: Youngman Elementary School (08:30-08:50 Registration in the audiovisual room on the 1st floor)
+
+Ma. Application deadline: 2026. 10. 1. (Thu) 09:00 ~ 2026. 10. 9. (Fri)
+
+B. Application method: Submit online application form</div><div class="err">목록 기호 &#x27;나·다&#x27;를 &#x27;Me., All.&#x27;로 직역 · 5.6s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">89</span></header><div class="text">It is said that Yeongman Elementary School operates &quot;2026 AI·Digital Dream Playground&quot; to cultivate the AI and digital capabilities of elementary school students in Jeonbuk Province. Interested students and parents, please check the following information, and check the attached document for details.
+
+Go. Event name: 2026 AI·Digital Dream Playground
+
+I. Event date and time: 2026. 10. 24.( Sat) 09:00 ~ 12:10
+
+All. Target and number of people: A total of 72 elementary school students in Jeonbuk Special Self-Governing Province
+
+※ 36 people in lower grades (1-3 grades), 36 people in high grades (4-6 grades)
+
+Ra. Event venue: Yeongman Elementary School (08:30-08:50 1st floor audiovisual room registration)
+
+Ma. Application deadline: 2026. 10. 1.( Thursday) 09:00 ~ 2026. 10. 9.( Gold)
+
+Bar. How to apply: Submit an online application</div><div class="err">목록 기호 직역(Go., I., Bar.), 금요일 &#x27;(금)&#x27;을 &#x27;Gold&#x27;로 오역 · 0.7s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">69</span></header><div class="text">Only in Elementary School, &quot;2026 AI, Digital Dream Playground&quot; for the AI and Digital Competency of the Elementary School Students in Jeonbuk. If you are interested in the student and parents, please check the following and confirm the attachment documentation for details. Go. Event Name: 2026 AI · Digital Dream Playground I. Date: 2026. 10. 24. (Sat) 09:00 to 12:10. Target and person: Jeonbuk Special autonomous province Elementary school student total 72 people (1-3 school year) 36, 36, high school (4-6 year) 36. Place: Manual Elementary School (08: 30-08: 50 1st Floor Area Registration). Application deadline: 2026. 10. 1. (Thursday) 09:00 ~ 2026. 10. 9. (Fri) bar. How to Apply: Submit an Online Application</div><div class="err">학교명 &#x27;영만&#x27;을 &#x27;Only(만)&#x27;로 오역, &#x27;Manual Elementary&#x27;, 학년·인원 뒤섞임 · 0.1s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">99</span></header><div class="text">Yeongman Elementary School is hosting the &quot;2026 AI &amp; Digital Dream Playground&quot; to foster AI and digital competencies among elementary school students in Jeonbuk. Interested students and parents are encouraged to review the information below and check the attached document for further details.
+
+a. Event Name: 2026 AI &amp; Digital Dream Playground
+b. Date &amp; Time: October 24, 2026 (Sat), 09:00 – 12:10
+c. Participants: Approximately 72 elementary school students from Jeonbuk Special Self-Governing Province
+※ Lower grades (1st–3rd): 36 students; Upper grades (4th–6th): 36 students
+d. Venue: Yeongman Elementary School (Registration: 08:30–08:50 at the 1st-floor Audiovisual Room)
+e. Application Period: October 1, 2026 (Thu) 09:00 – October 9, 2026 (Fri)
+f. How to Apply: Submit an online application form</div><div class="err">목록 기호를 a.~f.로 정확히 변환</div></article>
+</div></div>
+<div class="lang"><h3>베트남어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill warn">89</span></header><div class="text">Trường Tiểu học Yeongman thông báo sẽ vận hành chương trình 「Trường chơi ước mơ AI·Kỹ thuật số 2026」 nhằm phát triển năng lực AI·Kỹ thuật số cho học sinh tiểu học trên toàn tỉnh Jeollabuk. Các học sinh và phụ huynh quan tâm vui lòng xem thông tin bên dưới và xem tài liệu đính kèm để biết thêm chi tiết.
+
+A. Tên sự kiện: Khu vui chơi mơ ước AI·Kỹ thuật số 2026
+
+Tôi. Thời gian sự kiện: 24.10.2026 (Thứ Bảy) 09:00 ~ 12:10
+
+Đối tượng và số người tham gia: Khoảng 72 học sinh tiểu học trong toàn bộ tỉnh tự trị đặc biệt Jeollabuk-do.
+
+※ Học sinh tiểu học (lớp 1-3) 36 người, học sinh trung học (lớp 4-6) 36 người
+
+Ra. Địa điểm tổ chức sự kiện: Trường Tiểu học Yeongman (08:30-08:50 Đăng ký phòng đa phương tiện tầng 1)
+
+Ma. Hạn nộp đơn: 2026. 10. 1. (Thứ Năm) 09:00 ~ 2026. 10. 9. (Thứ Sáu)
+
+Ba. Cách nộp đơn: Nộp đơn trực tuyến</div><div class="err">목록 기호 직역(Tôi.), 고학년을 &#x27;중학생&#x27;으로 오역 · 6.5s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">89</span></header><div class="text">Người ta nói rằng Trường Tiểu học Yeongman điều hành &quot;2026 AI · Sân chơi Giấc mơ Kỹ thuật số&quot; để trau dồi AI và khả năng kỹ thuật số của học sinh tiểu học ở tỉnh Jeonbuk. Học sinh và phụ huynh quan tâm, vui lòng kiểm tra thông tin sau và kiểm tra tài liệu đính kèm để biết chi tiết.
+
+Đi. Tên sự kiện: 2026 AI·Digital Dream Playground
+
+Tôi. Ngày và giờ diễn ra sự kiện: 2026. 10. 24. ( Thứ Bảy) 09:00 ~ 12:10
+
+Tất cả. Mục tiêu và số lượng người: Tổng cộng 72 học sinh tiểu học ở tỉnh tự trị đặc biệt Jeonbuk
+
+※ 36 người ở các lớp thấp hơn (1-3 lớp), 36 người ở các lớp cao (4-6 lớp)
+
+Ra. Địa điểm tổ chức sự kiện: Trường tiểu học Yeongman (08:30-08:50 đăng ký phòng nghe nhìn tầng 1)
+
+Mẹ ơi. Hạn chót nộp đơn: 2026. 10. 1. ( Thứ Năm) 09:00 ~ 2026. 10. 9. ( Vàng)
+
+Quán bar. Cách đăng ký: Gửi đơn đăng ký trực tuyến</div><div class="err">목록 기호 &#x27;Mẹ ơi., Quán bar.&#x27;, 금요일을 &#x27;Vàng(금)&#x27;으로 오역 · 1.3s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">65</span></header><div class="text">Chỉ có ở trường tiểu học, &quot;2026 AI, Sân chơi Damor Dream kỹ thuật số&quot; cho AI và năng lực kỹ thuật số của học sinh tiểu học ở Jeonbuk. Nếu bạn quan tâm đến sinh viên và phụ huynh, vui lòng kiểm tra các mục sau và xác nhận tài liệu đính kèm để biết chi tiết. Đi. Tên sự kiện: 2026 AI · Sân chơi Dream Dream kỹ thuật số I. Ngày: 2026. 10. 24. (SAT) 09:00 đến 12:10. Mục tiêu và người: Học sinh tiểu học tỉnh tự trị đặc biệt Jeonbuk Tổng số 72 người (1-3 năm học) 36, 36, trường trung học (4-6 năm) 36. Địa điểm: Trường tiểu học thủ công (08: 30-08: 50 Đăng ký diện tích sàn 1). Hạn chót nộp đơn: 2026. 10. 1. (Thứ năm) 09:00 ~ 2026. 10. 9. (Thứ Sáu). Cách áp dụng: Gửi đơn trực tuyến</div><div class="err">학교명 소실, &#x27;Damor Dream&#x27;, &#x27;Trường tiểu học thủ công&#x27;, &#x27;고등학교&#x27;로 오역 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">98</span></header><div class="text">Trường Tiểu học Yeongman đang vận hành &quot;Sân chơi Ước mơ AI &amp; Kỹ thuật số 2026&quot; nhằm bồi dưỡng năng lực AI và kỹ thuật số cho học sinh tiểu học tại tỉnh Jeonbuk. Học sinh và phụ huynh quan tâm vui lòng xem chi tiết bên dưới và tham khảo tài liệu đính kèm để biết thêm thông tin.
+
+A. Tên sự kiện: Sân chơi Ước mơ Kỹ thuật số và Trí tuệ Nhân tạo 2026
+
+B. Ngày và giờ sự kiện: 24 tháng 10 năm 2026 (Thứ Bảy), 09:00 – 12:10
+
+C. Đối tượng và số lượng người tham gia: Khoảng 72 học sinh tiểu học đến từ Tỉnh tự trị đặc biệt Jeonbuk
+
+※ 36 học sinh các lớp dưới (lớp 1-3), 36 học sinh các lớp trên (lớp 4-6)
+
+D. Địa điểm sự kiện: Trường Tiểu học Yeongman (Đăng ký: 08:30-08:50, Phòng nghe nhìn tầng 1)
+
+E. Hạn chót đăng ký: 1 tháng 10 năm 2026 (Thứ Năm), 09:00 – 9 tháng 10 năm 2026 (Thứ Sáu)
+
+F. Cách đăng ký: Nộp đơn đăng ký trực tuyến</div><div class="err">목록 기호 A.~F. 정확, 행사명 표기 불일치</div></article>
+</div></div>
+<div class="lang"><h3>인도네시아어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">94</span></header><div class="text">Sekolah Dasar Youngman dikatakan akan mengoperasikan 「2026 AI·Digital Dream Playground」 untuk mengembangkan kompetensi AI·digital siswa sekolah dasar di seluruh wilayah Jeollabuk-do. Siswa dan orang tua yang tertarik diharapkan memeriksa informasi di bawah ini, dan untuk informasi lebih lanjut, silakan periksa dokumen terlampir.
+
+A. Nama acara: Taman Bermain Impian AI·Digital 2026
+
+Saya. Tanggal dan waktu acara: 2026. 10. 24. (Sabtu) 09.00 ~ 12.10
+
+Semua. Sasaran dan jumlah peserta: Sekitar 72 siswa sekolah dasar di dalam Provinsi Otonom Khusus Jeollabuk-do.
+
+※ Siswa kelas rendah (kelas 1-3) 36 orang, siswa kelas atas (kelas 4-6) 36 orang
+
+L. Tempat acara: Sekolah Dasar Yeongman (08:30-08:50 pendaftaran di ruang audiovisual lantai 1)
+
+Ma. Batas waktu pendaftaran: 2026. 10. 1. (Kamis) 09:00 ~ 2026. 10. 9. (Jumat)
+
+B. Cara pendaftaran: Mengirimkan formulir pendaftaran online</div><div class="err">목록 기호 직역(Saya., Semua.), 학교명 표기 불일치 · 6.8s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">89</span></header><div class="text">Dikatakan bahwa Sekolah Dasar Yeongman mengoperasikan &quot;2026 AI·Digital Dream Playground&quot; untuk menumbuhkan kemampuan AI dan digital siswa sekolah dasar di Provinsi Jeonbuk. Siswa dan orang tua yang tertarik, silakan periksa informasi berikut, dan periksa dokumen terlampir untuk detailnya.
+
+Pergi. Nama acara: 2026 AI·Digital Dream Playground
+
+Saya. Tanggal dan waktu acara: 2026. 10. 24. ( Sabtu) 09:00 ~ 12:10
+
+Semua. Target dan jumlah orang: Sebanyak 72 siswa sekolah dasar di Provinsi Pemerintahan Sendiri Khusus Jeonbuk
+
+※ 36 orang di kelas bawah (1-3 kelas), 36 orang di kelas tinggi (4-6 kelas)
+
+Ra. Tempat acara: Sekolah Dasar Yeongman (08:30-08:50 pendaftaran ruang audiovisual lantai 1)
+
+Ibu. Batas waktu pendaftaran: 2026. 10. 1. ( Kamis) 09:00 ~ 2026. 10. 9. ( Emas)
+
+Bar. Cara mendaftar: Kirimkan aplikasi online</div><div class="err">목록 기호 &#x27;Pergi., Ibu., Bar.&#x27;, 금요일을 &#x27;Emas&#x27;로 오역 · 1.2s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">60</span></header><div class="text">Hanya di sekolah dasar, &quot;2026 Ai, Digital Dream Playground&quot; untuk kompetensi AI dan Digital dari siswa sekolah dasar di Jeonbuk. Jika Anda tertarik pada siswa dan orang tua, silakan periksa yang berikut ini dan konfirmasi dokumentasi lampiran untuk detailnya. Pergi. Nama Acara: 2026 AI · Digital Dream Playground I. Tanggal: 2026. 10. (SAT) 09:00 hingga 12:10. Target dan Orang: Jeonbuk Provinsi Otonomi Khusus Provinsi Sekolah Dasar Total 72 orang (1-3 tahun sekolah) 36, 36, SMA (4-6 tahun) 36. Tempat: Manual Sekolah Dasar (08-08: 50 Pendaftaran Area Lantai 1). Batas Waktu Aplikasi: 2026. 10. 1. (Kamis) 09:00 ~ 2026. 10. 9. (FRI) BAR. Cara Mendaftar: Kirim Aplikasi Online</div><div class="err">학교명 소실, 날짜 24일 누락, &#x27;SMA&#x27;, 등록 시간 깨짐 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">99</span></header><div class="text">Sekolah Dasar Yeongman menyelenggarakan &quot;Taman Bermain Impian AI &amp; Digital 2026&quot; untuk mengembangkan kemampuan AI dan digital di kalangan siswa sekolah dasar di Provinsi Jeonbuk. Siswa dan orang tua yang berminat diminta untuk meninjau detail di bawah ini, dan silakan merujuk ke dokumen terlampir untuk informasi lebih lanjut.
+
+A. Nama Acara: Taman Bermain Impian AI &amp; Digital 2026
+
+B. Tanggal &amp; Waktu Acara: 24 Oktober 2026 (Sabtu), 09:00 – 12:10
+
+C. Target Peserta dan Jumlah Peserta: Sekitar 72 siswa sekolah dasar dari Provinsi Otonomi Khusus Jeonbuk
+
+※ 36 siswa kelas bawah (kelas 1–3), 36 siswa kelas atas (kelas 4–6)
+
+D. Tempat Acara: Sekolah Dasar Yeongman (Pendaftaran: 08:30–08:50, Ruang Audiovisual Lantai 1)
+
+E. Batas Waktu Pendaftaran: 1 Oktober 2026 (Kamis), 09:00 – 9 Oktober 2026 (Jumat)
+
+F. Cara Mendaftar: Kirimkan aplikasi online</div><div class="err">좋음</div></article>
+</div></div>
+<div class="lang"><h3>일본어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">94</span></header><div class="text">ヨンマン小学校では、全北道内の小学生のAI・デジタル能力の育成のために「2026 AI・デジタル夢の遊び場」を運営するとされています。ご興味のある学生や保護者の皆様は、以下の内容をご確認いただき、詳細は添付文書をご確認ください。
+
+ガ. 行事名：2026 AI・デジタル夢の遊び場
+
+私。行事日時：2026. 10. 24.(土) 09時00分〜12時10分
+
+全て。対象及び人員：全北特別自治道内小学校生総計72名前後
+
+※低学年（1-3年生）36名、高学年（4-6年生）36名
+
+ラ。行事場所：ヨンマン小学校（08:30-08:50 1階視聴覚室登録）
+
+マ. 申請期限：2026. 10. 1.(木) 09:00 ~ 2026. 10. 9.(金)
+
+バ。申請方法：オンライン申請書提出</div><div class="err">목록 기호 직역(私。全て。) · 5.1s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">91</span></header><div class="text">ヨンマン小学校では、全羅北道の小学生のAI・デジタル能力育成を目的として「2026 AI・デジタル夢遊び場」を運営しているそうです。 ご関心のある学生と保護者の方は、以下の内容をご確認いただき、詳細は添付文書をご確認ください。
+
+行け。 イベント名：2026 AI・デジタル 夢の遊び場
+
+私。 イベント日時：2026年。 10. 24.( 土) 09時00分〜12時10分
+
+すべて。 対象および人数：全羅北道特別自治道内の小学生（総計72名前後）
+
+※ 低学年（1〜3年生）36名、高学年（4〜6年生）36名
+
+ラ。 開催場所：ヨンマン小学校（08:30〜08:50）1階視聴覚室登録
+
+マ。 申請期限：2026年。 10. 1.( 木) 09:00〜2026. 10. 9.( 金)
+
+バー。 申請方法：オンライン申請書の提出</div><div class="err">목록 기호 &#x27;行け。バー。&#x27;, &#x27;2026年。&#x27; 날짜 깨짐 · 0.8s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">60</span></header><div class="text">Eneonbukの小学生のAIおよびデジタル能力のための小学校「2026 AI、デジタルドリームプレイグラウンド」でのみ。 あなたが学生と両親に興味があるならば、次のことを確認して、詳細については添付資料を確認してください。 移動します。 イベント名：2026 AI・デジタルドリーム遊び場I.日付：2026. 10.24.（SAT）09:00から12:10 ターゲットと人：Jeonbuk特別自治省小学生総学生総72人（1-3学年）36,36、高校（4-6年）36.場所：手動小学校（08：30-08：50 1階登録）。 申請期限：2026.10.1。（木曜日）09:00~2026.10. 10.（金）バー。 適用方法：オンラインアプリケーションを送信する</div><div class="err">&#x27;でのみ&#x27;로 학교명 소실, &#x27;Eneonbuk&#x27;, &#x27;高校&#x27;, &#x27;手動小学校&#x27;, 9일→10일 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">98</span></header><div class="text">永万（ヨンマン）小学校では、全北（チョンブク）道内の小学生のAI・デジタル能力を育成するため、「2026 AI・デジタル夢の遊び場」を運営いたします。関心をお持ちの児童および保護者の皆様は、以下の内容をご確認いただき、詳細は添付資料をご参照ください。
+
+ア. 行事名：2026 AI・デジタル夢の遊び場
+イ. 日時：2026年10月24日（土） 09:00～12:10
+ウ. 対象および定員：全北特別自治道内の小学生 計72名程度
+※ 低学年（1～3年生）36名、高学年（4～6年生）36名
+エ. 場所：永万小学校（08:30～08:50 1階視聴覚室にて受付）
+オ. 申込期限：2026年10月1日（木）09:00～2026年10月9日（金）
+カ. 申込方法：オンライン申込書の提出</div><div class="err">목록 기호를 ア.~カ.로 변환, 학교명 한자 &#x27;永万&#x27;은 추정 표기</div></article>
+</div></div>
+<div class="lang"><h3>중국어(간체)</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">93</span></header><div class="text">永满小学将在全罗北道全境的小学生培养AI·数字能力方面，运营“2026 AI·数字梦幻乐园”。有兴趣的学生和家长请确认以下内容，详细事项请查阅附件文件。
+
+a. 活动名称：2026 AI·数字梦想游乐场
+
+我。活动日期时间：2026. 10. 24.(周六) 09时00分 ~ 12时10分
+
+全部。对象及人数：全罗北道内小学学生共约72名
+
+※低年级（1-3年级）36名，高年级（4-6年级）36名
+
+拉。活动地点：永满小学（08:30-08:50 1楼视听教室登记）
+
+马. 申请截止日期：2026. 10. 1.(周四) 09:00 ~ 2026. 10. 9.(周五)
+
+巴。申请方法：提交在线申请表</div><div class="err">목록 기호 직역(我。全部。拉。) · 4.8s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">89</span></header><div class="text">据说永满小学为了培养全北道内小学生的AI·数字能力，运营“2026 AI·数字梦想游乐场”。 感兴趣的学生和家长请确认以下内容，详细事项请确认附件。
+
+去。 活动名称：2026 AI·数字梦想游乐场
+
+我。 活动日期：2026。 10. 24.( 周六）09点00分～12点10分
+
+都。 对象及人数：全北特别自治道内小学生共72人左右
+
+※低年级（1-3年级）36名，高年级（4-6年级）36名
+
+啦。 活动地点：永满小学（08:30-08:50 1楼视听室登记）
+
+马。 申请期限：2026。 10. 1.( 周四）09:00~2026。 10. 9.（ 金）
+
+吧。 申请方法：在线提交申请书</div><div class="err">목록 기호 &#x27;去。都。吧。&#x27;, 금요일을 &#x27;金&#x27;으로 오역 · 0.7s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">55</span></header><div class="text">只有在小学，“2026 AI，数字梦游游乐场”对于Jeonuk中小学生的AI和数字能力。 如果您对学生和父母感兴趣，请检查以下内容，并确认附件文档以获取详细信息。 去。 活动名称：2026 AI·数字梦幻游乐场I.日期：2026. 10.24。（星期六）09:00至12:10。 目标和人：Jeonbuk特殊自治省小学学生共72人（1-3学年）36,36，高中（4-6年）36.地点：手动小学（08：30-08：50 1楼面积注册）。 申请截止日期：2026.1.1.1。（星期四）09:00〜2026. 10.（FRI）酒吧。 如何应用：提交在线申请</div><div class="err">&#x27;只有在小学&#x27;로 학교명 소실, &#x27;梦游(몽유)&#x27;, 날짜 &#x27;2026.1.1.1&#x27;, &#x27;高中&#x27; · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">98</span></header><div class="text">荣万小学正在运营“2026人工智能与数字梦想乐园”，旨在培养全罗北道小学生的人工智能和数字能力。感兴趣的学生和家长请查看以下详情，更多信息请参阅附件。
+
+A. 活动名称：2026 AI &amp; 数字梦想乐园
+
+B. 活动日期及时间：2026年10月24日（周六）9:00 – 12:10
+
+C. 目标受众及参与人数：全罗北特别自治道约72名小学生
+
+※ 低年级（1-3年级）36名学生，高年级（4-6年级）36名学生
+
+D. 活动地点：荣万小学（报名时间：8:30-8:50，一楼视听室）
+
+E. 报名截止日期：2026年10月1日（周四）9:00 – 2026年10月9日（周五）
+
+F. 报名方式：在线提交申请</div><div class="err">학교명 &#x27;荣万&#x27;은 추정 표기, 지명 표기 혼용</div></article>
+</div></div>
+</div></details>
+<details id="meal-oct-07"><summary><span class="cat">급식</span>10월 7일 (수) 급식</summary><div class="body">
+<div class="lang"><h3>한국어 원문</h3><pre class="src">문어톳밥
+쇠고기떡국 (1.16)
+콩나물무침 (5)
+치즈닭갈비 (2.5.6.13.15)
+배추겉절이 (9.13)
+양념장 (5.6.13)
+사과 (13)
+
+알레르기 정보
+1.난류 2.우유 3.메밀 4.땅콩 5.대두 6.밀 7.고등어 8.게 9.새우 10.돼지고기 11.복숭아 12.토마토 13.아황산류 14.호두 15.닭고기 16.쇠고기 17.오징어 18.조개류(굴,전복,홍합 포함) 19.잣
+
+※ 식단은 학교 사정에 의해서 변경될 수 있습니다.</pre></div>
+<div class="lang"><h3>영어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill warn">71</span></header><div class="text">Octopus stir-fried rice
+
+Beef pancake soup (1.16)
+
+Bean sprout salad (5)
+
+Cheese chicken galbi (2.5.6.13.15)
+
+Cabbage kimchi (9.13)
+
+Soy sauce (5.6.13)
+
+Apples (13)
+
+Allergy information
+
+1.Turbulence 2.Milk 3.Buckwheat 4.Peanuts 5.Soybeans 6.Wheat 7.Tuna 8.Crabs 9.Shrimp 10.Pork 11.Peach 12.Tomato 13.Sulfites 14.Walnuts 15.Chicken 16.Beef 17.Squid 18.Shellfish (including oysters, abalone, and clams) 19.pine nuts
+
+※ The diet may be changed due to school circumstances.</div><div class="err">알레르기 &#x27;난류(달걀)&#x27;→Turbulence, 고등어→Tuna, 떡국→&#x27;pancake soup&#x27; · 4.5s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill bad">69</span></header><div class="text">Octopus rice
+
+Beef rice cake soup (1.16)
+
+Sorted bean sprouts (5)
+
+Cheese chicken ribs (2.5.6.13.15)
+
+Picked cabbage (9.13)
+
+Seasoning (5.6.13)
+
+Apple (13)
+
+Allergy information
+
+1. Turbule 2. Milk 3. Buckwheat 4. Peanuts 5. Soybean 6. Wheat 7. Mackerel 8. Crab 9. Shrimp 10. Pork 11. Peach 12. Tomato 13. Sulfuric acid 14. Walnut 15. Chicken 16. Beef 17. Squid 18. Shellfish (including oysters, aballones, and mussels) 19. Pine nuts
+
+※ The menu is subject to change depending on the school&#x27;s circumstances.</div><div class="err">난류→&#x27;Turbule&#x27;, 아황산류→&#x27;Sulfuric acid&#x27;, 콩나물무침→&#x27;Sorted bean sprouts&#x27; · 0.6s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">45</span></header><div class="text">Octopus Beef Ciok (1.16) Beans (5) Cheese Chicken Rib (2.5.6.13.15) Coupled Care (9.13) Season (5.6.13) Apples (13) Allergy 2. Milk 3. Milk 3. Buckwheat 4. Peanuts 5. Soybeans 6. Wheat 7. Mackerel 8. Crab 9. Shrimp 10. Pork 11. Peach 12 Tomatoes 13. Sulfur &amp; Tumucry 14. Walnuts 15. Chicken Meat 16. Beef 17. Squid 18. Shell (including oysters, abalone, mussels) 19. Pine nut ※ The diet can be changed by school circumstances.</div><div class="err">1번 알레르기 누락, &#x27;Milk&#x27; 중복, 아황산류→&#x27;Sulfur &amp; Tumucry&#x27;, 메뉴 깨짐, 줄바꿈 소실 · 0.1s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">99</span></header><div class="text">Octopus and Hijiki Seaweed Rice
+Beef Rice Cake Soup (1, 16)
+Seasoned Soybean Sprouts (5)
+Cheese Dakgalbi (Spicy Stir-fried Chicken) (2, 5, 6, 13, 15)
+Fresh Napa Cabbage Kimchi (9, 13)
+Seasoning Sauce (5, 6, 13)
+Apple (13)
+
+Allergy Information
+1. Eggs 2. Milk 3. Buckwheat 4. Peanuts 5. Soybeans 6. Wheat 7. Mackerel 8. Crab 9. Shrimp 10. Pork 11. Peach 12. Tomato 13. Sulfites 14. Walnuts 15. Chicken 16. Beef 17. Squid 18. Shellfish (including oysters, abalone, mussels) 19. Pine nuts
+
+※ The menu is subject to change depending on school circumstances.</div><div class="err">알레르기 19개 모두 정확, 메뉴 설명 정확</div></article>
+</div></div>
+<div class="lang"><h3>베트남어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill bad">29</span></header><div class="text">Cơm mực
+
+Súp bánh gạo thịt bò (1.16)
+
+Salad rau đậu xanh (5)
+
+Gimbap gà phô mai (2.5.6.13.15)
+
+Baechui gỏi (9.13)
+
+Nước sốt (5.6.13)
+
+Táo (13)
+
+Thông tin dị ứng
+
+1.Dòng chảy hỗn loạn 2.Sữa 3.Lúa mạch 4.Đậu phộng 5.Đậu nành 6.Lúa mì 7.Cá hồi 8.Tôm hùm 9.Tôm 10.Thịt lợn 11.Đào 12.Cà chua 13.Hợp chất lưu huỳnh 14.Hạt óc chó 15.Thịt gà 16.Thịt bò 17.Tôm hùm 18.Động vật giáp xác (bao gồm sò, ốc biển, trai) 19.Hạt dẻ
+
+※ Chế độ ăn có thể thay đổi tùy thuộc vào tình hình của trường.</div><div class="err">알레르기 6건 오역: 난류·메밀→보리·고등어→연어·게→바닷가재·오징어→바닷가재·잣→밤 · 5.7s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill bad">64</span></header><div class="text">Cơm bạch tuộc
+
+Súp bánh gạo bò (1.16)
+
+Giá đỗ đã phân loại (5)
+
+Sườn gà phô mai (2.5.6.13.15)
+
+Bắp cải hái (9.13)
+
+Gia vị (5.6.13)
+
+Táo (13)
+
+Thông tin dị ứng
+
+1. Hỗn loạn 2. Sữa 3. Kiều mạch 4. Đậu phộng 5. Đậu nành 6. Lúa mì 7. Cám thu 8. Cua 9. Tôm 10. Thịt lợn 11. Đào 12. Cà chua 13. Axit sulfuric 14. Quả óc chó 15. Gà 16. Thịt bò 17. Mực 18. Động vật có vỏ (bao gồm hàu, quả bóng bay và trai) 19. Hạt thông
+
+※ Thực đơn có thể thay đổi tùy theo hoàn cảnh của trường.</div><div class="err">난류→&#x27;Hỗn loạn&#x27;, 아황산류→&#x27;Axit sulfuric&#x27;, 전복→&#x27;풍선&#x27; · 1.3s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">35</span></header><div class="text">Bạch tuộc Thịt bò CIOK (1.16) Đậu (5) sườn gà phô mai (2.5.6.13.15) Chăm sóc chung (9.13) Mùa (5.6.13) Táo (13) Dị ứng 2. Sữa 3. Sữa 3. Buckwheat 4. Peanuts 5. Đậu nành 6. lúa mì 7. Mackerel 8. Cua 9. Tôm 10. Thịt lợn 11. Peach 12 Tomatoes 13. Lưu huỳnh &amp; Tumucry 14. Quả óc chó 15. Thịt gà 16. Thịt bò 17. Squid 18. Shell (bao gồm cả sò, bào ngư, Mussels) 19. Cây thông ※ Chế độ ăn uống có thể được thay đổi theo hoàn cảnh trường học.</div><div class="err">1번 누락, 우유 중복, 영어 단어 혼입, 잣→소나무, 메뉴 깨짐 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill warn">88</span></header><div class="text">Cơm bạch tuộc và rong biển
+
+Canh bánh bò (1.16)
+
+Giá đỗ xào (5)
+
+Bánh mì Dakgalbi phô mai (2.5.6.13.15)
+
+Salad bắp cải tươi (9.13)
+
+Nước chấm (5.6.13)
+
+Táo (13)
+
+Thông tin dị ứng
+
+1. Trứng 2. Sữa 3. Kiều mạch 4. Đậu phộng 5. Đậu nành 6. Lúa mì 7. Cá thu 8. Cua 9. Tôm 10. Thịt lợn 11. Đào 12. Cà chua 13. Sulfite 14. Quả óc chó 15. Thịt gà 16. Thịt bò 17. Mực 18. Hải sản (bao gồm hàu, bào ngư và trai) 19. Hạt thông
+
+※ Thực đơn có thể thay đổi tùy thuộc vào tình hình của trường.</div><div class="err">알레르기 모두 정확, 떡국→&#x27;bánh bò&#x27;(다른 음식), 치즈닭갈비→&#x27;Bánh mì&#x27;로 오역</div></article>
+</div></div>
+<div class="lang"><h3>인도네시아어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill bad">20</span></header><div class="text">Nasi udang kepiting
+
+Sup tteok daging sapi (1.16)
+
+Tumis daun kacang hijau (5)
+
+Chicken Galbi keju (2.5.6.13.15)
+
+Baechui gukjeolli (13.9)
+
+Bumbu (5.6.13)
+
+Apel (13)
+
+Informasi alergi
+
+1. Turbulensi 2. Susu 3. Jagung manis 4. Kacang tanah 5. Kedelai 6. Gandum 7. Ikan teri 8. Udang laut 9. Udang 10. Daging babi 11. Persik 12. Tomat 13. Zat sulfurous 14. Kacang mete 15. Daging ayam 16. Daging sapi 17. Udang laut 18. Makanan laut (termasuk kerang, tiram, dan kerang merah) 19. Kacang pinus
+
+※ Pola makan dapat diubah tergantung pada keadaan sekolah.</div><div class="err">메뉴 &#x27;문어톳밥&#x27;→&#x27;새우 게 밥&#x27;, 알레르기 6건 오역(메밀→옥수수, 고등어→멸치, 호두→캐슈 등) · 5.5s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill bad">64</span></header><div class="text">Nasi gurita
+
+Sup kue beras daging sapi (1.16)
+
+Tauge yang disortir (5)
+
+Iga ayam keju (2.5.6.13.15)
+
+Kubis yang dipetik (9.13)
+
+Bumbu (5.6.13)
+
+Apel (13)
+
+Informasi alergi
+
+1. Turbulen 2. Susu 3. Soba 4. Kacang 5. Kedelai 6. Gandum 7. Makarel 8. Kepiting 9. Udang 10. Daging babi 11. Persik 12. Tomat 13. Asam sulfat 14. Kenari 15. Ayam 16. Daging sapi 17. Cumi-cumi 18. Kerang (termasuk tiram, balon, dan kerang) 19. Kacang pinus
+
+※ Menu dapat berubah tergantung pada keadaan sekolah.</div><div class="err">난류→&#x27;Turbulen&#x27;, 아황산류→&#x27;Asam sulfat&#x27;, 전복→&#x27;balon&#x27; · 1.2s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">30</span></header><div class="text">Octopus Beef CIOK (1.16) Kacang (5) Rib ayam keju (2.5.6.13.15) Berpasangan Perawatan (9.13) Musim (5.6.13) Apel (13) Alergi 2. Susu 3. Susu 3. Sendekan 4. Kacang 5. Kedelai 6. gandum 7. mackerel 8. kepiting 9. udang 10. Pork 11. Peach 12 tomat 13. Sulfur &amp; Tumucry 14. Walnuts 15. Daging Ayam 16. Squid 18. Shell (termasuk tiram, Abalone, Kerang) 19. Kacang pinus ※ Diet dapat diubah oleh keadaan sekolah.</div><div class="err">1번 누락, 우유 중복, 영어 혼입, 메뉴 깨짐 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">97</span></header><div class="text">Nasi Gurita dan Rumput Laut
+
+Sup Kue Beras Daging Sapi (1.16)
+
+Tauge Bumbu (5)
+
+Dakgalbi Keju (2.5.6.13.15)
+
+Salad Kubis Napa Segar (9.13)
+
+Saus Bumbu (5.6.13)
+
+Apel (13)
+
+Informasi Alergi
+
+1. Telur 2. Susu 3. Buckwheat 4. Kacang Tanah 5. Kedelai 6. Gandum 7. Makarel 8. Kepiting 9. Udang 10. Babi 11. Persik 12. Tomat 13. Sulfit 14. Kenari 15. Ayam 16. Daging Sapi 17. Cumi-cumi 18. Kerang (termasuk tiram, abalone, dan remis) 19. Kacang Pinus
+
+※ Menu dapat berubah sewaktu-waktu mengenai kondisi sekolah.</div><div class="err">알레르기 모두 정확, 마지막 문장 문법 어색</div></article>
+</div></div>
+<div class="lang"><h3>일본어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill bad">15</span></header><div class="text">イカのスープご飯
+
+牛肉麺スープ（1.16）
+
+豆芽ナムビム（5）
+
+チーズチキンカルビ（2.5.6.13.15）
+
+白菜のキムチ（9.13）
+
+醤油（5.6.13）
+
+リンゴ（13）
+
+アレルギー情報
+
+1.ナルトウ 2.牛乳 3.蕎麦 4.ピーナッツ 5.大豆 6.小麦 7.イカ 8.エビ 9.カニ 10.豚肉 11.桃 12.トマト 13.アミノ酸塩類 14.アーモンド 15.鶏肉 16.牛肉 17.イカ 18.貝類（牡蠣、あわじ、ホタテ含む） 19.ゴマ
+
+※食事は学校の事情により変更されることがあります。</div><div class="err">문어→イカ, 알레르기 7건 오역(게·새우 뒤바뀜, 호두→아몬드, 잣→참깨, 아황산→아미노산) · 4.8s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill bad">62</span></header><div class="text">タコのご飯
+
+牛肉餅スープ (1.16)
+
+もやし和え物 (5)
+
+チーズチキンカルビ (2.5.6.13.15)
+
+白菜の皮漬け (9.13)
+
+調味料 (5.6.13)
+
+りんご (13)
+
+アレルギー情報
+
+1. 乱流 2. 牛乳3。 そば 4. ピーナッツ5。 大豆 6. ミル7。 サバ 8. カニ9。 エビ 10. 豚肉 11. 桃 12. トマト13。 亜硫酸類 14. くるみ 15. 鶏肉 16. 牛肉 17. イカ 18. 貝類（カキ、アワビ、ムール貝を含む）19. 松の実
+
+※ 食事は学校の事情により変更されることがあります。</div><div class="err">난류→&#x27;乱流&#x27;, 밀→&#x27;ミル&#x27;, 구두점 깨짐 · 0.8s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">20</span></header><div class="text">タコ（1.16）豆（5）チーズチキンリブ（2.5.6.13.15）連結ケア（9.13）シーズン（5.6.13）りんご（13）アレルギー2.ミルク3.牛乳3.ピーナッツ5。大豆6.小麦7. Mackerel 8. Crab 9.エビ10.豚肉11.桃11.桃12.黄褐色15.クルミ16.牛肉17. Squid 18.シェル（カキ、アワロネなど、ムール貝）19.松ナッツ※国会は学校の状況によって変更することができます。</div><div class="err">알레르기 목록 번호 뒤섞임·누락, &#x27;Diet&#x27;를 &#x27;国会(국회)&#x27;로 오역 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">99</span></header><div class="text">タコとヒジキの炊き込みご飯
+牛肉入りトックク（韓国風餅スープ） (1.16)
+豆もやしの和え物 (5)
+チーズタッカルビ (2.5.6.13.15)
+白菜の浅漬けキムチ (9.13)
+ヤンニョムジャン（合わせ調味料） (5.6.13)
+リンゴ (13)
+
+アレルギー情報
+1.卵類 2.牛乳 3.そば 4.落花生 5.大豆 6.小麦 7.サバ 8.カニ 9.エビ 10.豚肉 11.桃 12.トマト 13.亜硫酸塩 14.クルミ 15.鶏肉 16.牛肉 17.イカ 18.貝類（カキ、アワビ、ムール貝を含む） 19.松の実
+
+※ 献立は学校の都合により変更される場合があります。</div><div class="err">알레르기·메뉴 모두 정확</div></article>
+</div></div>
+<div class="lang"><h3>중국어(간체)</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill warn">73</span></header><div class="text">章鱼炒饭
+
+牛肉年糕汤（1.16）
+
+豆芽凉拌（5）
+
+芝士鸡肉辣炒肉（2.5.6.13.15）
+
+白菜泡菜（9.13）
+
+酱油（5.6.13）
+
+苹果（13）
+
+过敏信息
+
+1.海藻 2.牛奶 3.荞麦 4.花生 5.大豆 6.小麦 7.金枪鱼 8.蟹 9.虾 10.猪肉 11.桃子 12.番茄 13.亚硫酸盐 14.核桃 15.鸡肉 16.牛肉 17.鱿鱼 18.贝类（包括牡蛎、扇贝、贻贝） 19.松子
+
+※饮食可能会因为学校的情况而改变。</div><div class="err">난류→&#x27;海藻&#x27;, 고등어→&#x27;金枪鱼&#x27;, 전복 누락 · 4.3s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">82</span></header><div class="text">章鱼饭
+
+牛肉年糕汤 (1.16)
+
+腌豆芽 (5)
+
+奶酪鸡排 (2.5.6.13.15)
+
+白菜皮（9.13）
+
+调味酱 (5.6.13)
+
+苹果 (13)
+
+过敏信息
+
+1. 乱流2。 牛奶3。 荞麦4。 花生5。 大豆6。 小麦7。 鲭鱼8。 螃蟹9。 虾10。 猪肉11。 桃子12。 番茄13。 亚硫酸类 14. 核桃15。 鸡肉16。 牛肉17。 鱿鱼18。 贝类（包括牡蛎、鲍腹、贻贝）19. 松子
+
+※菜单可能会根据学校情况而变更。</div><div class="err">난류→&#x27;乱流&#x27;, 배추겉절이→&#x27;白菜皮&#x27; · 0.7s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">35</span></header><div class="text">八达通牛肉Ciok（1.16）豆类（5）奶酪鸡肋（2.5.6.13.15）耦合护理（9.13）季节（5.6.13）苹果（13）allergy 2.牛奶3.牛奶3.荞麦4.花生5。大豆7.小麦7.鲭鱼8.螃蟹9.虾10.猪肉11.桃子12番茄13.硫磺＆tumucry 14.核桃15.鸡肉16.牛肉17.鱿鱼18.鱿鱼壳（包括牡蛎，鲍鱼，贻贝）19。松果※学校情况可以改变饮食。</div><div class="err">문어→&#x27;八达通(교통카드)&#x27;, 1·6번 누락, 아황산류 깨짐 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">93</span></header><div class="text">章鱼海带饭
+
+牛肉年糕汤 (1.16)
+
+凉拌豆芽 (5)
+
+芝士辣炒排骨 (2.5.6.13.15)
+
+新鲜大白菜沙拉 (9.13)
+
+调味酱 (5.6.13)
+
+苹果 (13)
+
+过敏信息
+
+1. 鸡蛋 2. 牛奶 3. 荞麦 4. 花生 5. 大豆 6. 小麦 7. 鲭鱼 8. 螃蟹 9. 虾 10. 猪肉 11. 桃子 12. 番茄 13. 亚硫酸盐 14. 核桃 15. 鸡肉 16. 牛肉 17. 鱿鱼 18. 贝类（包括牡蛎、鲍鱼和贻贝） 19. 松子
+
+※ 菜单内容可能会有所变动根据学校情况而定。</div><div class="err">알레르기 모두 정확, 치즈닭갈비→&#x27;排骨(갈비)&#x27;</div></article>
+</div></div>
+</div></details>
+<details id="meal-oct-06"><summary><span class="cat">급식</span>10월 6일 (화) 급식</summary><div class="body">
+<div class="lang"><h3>한국어 원문</h3><pre class="src">친환경흑미밥
+바지락시금치된장국 (5.6.18)
+도라지오이생채 (5.6.13)
+짜장오리불고기 (2.5.6.13)
+고구마맛탕 (5.6.13)
+배추김치 (9)
+녹차무쌈
+
+알레르기 정보
+1.난류 2.우유 3.메밀 4.땅콩 5.대두 6.밀 7.고등어 8.게 9.새우 10.돼지고기 11.복숭아 12.토마토 13.아황산류 14.호두 15.닭고기 16.쇠고기 17.오징어 18.조개류(굴,전복,홍합 포함) 19.잣
+
+※ 식단은 학교 사정에 의해서 변경될 수 있습니다.</pre></div>
+<div class="lang"><h3>영어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill bad">55</span></header><div class="text">Eco-friendly black rice rice
+
+Scallops and spinach doenjang soup (5.6.18)
+
+Dorajioi salad (5.6.13)
+
+Zajang duck bulgogi (2.5.6.13)
+
+Sweet potato soup (5.6.13)
+
+Cauliflower kimchi (9)
+
+Green tea seaweed wrap
+
+Allergy information
+
+1.Turbulence 2.Milk 3.Buckwheat 4.Peanuts 5.Soybeans 6.Wheat 7.Tuna 8.Crabs 9.Shrimp 10.Pork 11.Peach 12.Tomato 13.Sulfites 14.Walnuts 15.Chicken 16.Beef 17.Squid 18.Shellfish (including oysters, abalone, and clams) 19.pine nuts
+
+※ The diet may be changed due to school circumstances.</div><div class="err">난류·고등어 오역, 바지락→Scallops, 배추김치→Cauliflower, 맛탕→soup · 5.0s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill bad">68</span></header><div class="text">Eco-friendly black rice
+
+Clams and spinach miso soup (5.6.18)
+
+Doragioi Saengchae (5.6.13)
+
+Jjajang duck bulgogi (2.5.6.13)
+
+Sweet potato soup (5.6.13)
+
+Cabbage kimchi (9)
+
+Green tea mussam
+
+Allergy information
+
+1. Turbule 2. Milk 3. Buckwheat 4. Peanuts 5. Soybean 6. Wheat 7. Mackerel 8. Crab 9. Shrimp 10. Pork 11. Peach 12. Tomato 13. Sulfuric acid 14. Walnut 15. Chicken 16. Beef 17. Squid 18. Shellfish (including oysters, aballones, and mussels) 19. Pine nuts
+
+※ The menu is subject to change depending on the school&#x27;s circumstances.</div><div class="err">난류·아황산류 오역, 도라지오이생채를 음역, 맛탕→soup · 0.7s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">40</span></header><div class="text">Eco-friendly blackbeam bobbigami spinach (5.6.18) Dorajio Dori (5.6.13) Win Duck Fire (2.5.6.13) Sweet potato (5.6.13) Cabbage kimchi (9) Neurobus 2. Milk 3. Milk 3. Buckwheat 4. Peanuts 5. Soybeans 6. Wheat 7. Mackerel 8. Crab 9. Shrimp 10. Pork 11. Peach 12. Tomato 13. Sulfur &amp; Pitch 14. Walnuts 15. Chicken 16. Beef 17. Squid 18. Shell (containing oysters, abalone, mussels) 19. Pine nut ※ The diet can be changed by school matter.</div><div class="err">메뉴 대부분 깨짐(&#x27;Win Duck Fire&#x27;), 1번 누락, 우유 중복 · 0.1s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">99</span></header><div class="text">Eco-friendly Black Rice
+Manila Clam &amp; Spinach Soybean Paste Soup (5, 6, 18)
+Seasoned Bellflower Root &amp; Cucumber Salad (5, 6, 13)
+Duck Bulgogi with Jjajang Sauce (2, 5, 6, 13)
+Glazed Sweet Potato Wedges (5, 6, 13)
+Napa Cabbage Kimchi (9)
+Green Tea-infused Pickled Radish Wraps
+
+Allergy Information
+1. Eggs 2. Milk 3. Buckwheat 4. Peanuts 5. Soybeans 6. Wheat 7. Mackerel 8. Crab 9. Shrimp 10. Pork 11. Peach 12. Tomato 13. Sulfites 14. Walnuts 15. Chicken 16. Beef 17. Squid 18. Shellfish (including oysters, abalone, mussels) 19. Pine nuts
+
+※ The menu is subject to change depending on school circumstances.</div><div class="err">알레르기·메뉴 모두 정확</div></article>
+</div></div>
+<div class="lang"><h3>베트남어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill bad">20</span></header><div class="text">Cơm gạo lứt hữu cơ
+
+Súp nước tương đậu nành với sò điệp và cải bina (5.6.18)
+
+Salad rau dưa chuột (5.6.13)
+
+Gà xào đậu phụ và thịt bò xào (2.5.6.13)
+
+Súp vị khoai lang (5.6.13)
+
+Kimchi cải bắp (9)
+
+Bánh cuốn rau mu với trà xanh
+
+Thông tin dị ứng
+
+1.Dòng chảy hỗn loạn 2.Sữa 3.Lúa mạch 4.Đậu phộng 5.Đậu nành 6.Lúa mì 7.Cá hồi 8.Tôm hùm 9.Tôm 10.Thịt lợn 11.Đào 12.Cà chua 13.Hợp chất lưu huỳnh 14.Hạt óc chó 15.Thịt gà 16.Thịt bò 17.Tôm hùm 18.Động vật giáp xác (bao gồm sò, ốc biển, trai) 19.Hạt dẻ
+
+※ Chế độ ăn có thể thay đổi tùy thuộc vào tình hình của trường.</div><div class="err">알레르기 6건 오역, 짜장오리불고기→&#x27;닭·두부·소고기 볶음&#x27; · 6.5s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill bad">68</span></header><div class="text">Gạo đen thân thiện với môi trường
+
+Súp miso ngao và rau bina (5.6.18)
+
+Doragioi Saengchae (5.6.13)
+
+Bulgogi vịt Jjajang (2.5.6.13)
+
+Súp khoai lang (5.6.13)
+
+Kim chi bắp cải (9)
+
+Trà xanh mussam
+
+Thông tin dị ứng
+
+1. Hỗn loạn 2. Sữa 3. Kiều mạch 4. Đậu phộng 5. Đậu nành 6. Lúa mì 7. Cám thu 8. Cua 9. Tôm 10. Thịt lợn 11. Đào 12. Cà chua 13. Axit sulfuric 14. Quả óc chó 15. Gà 16. Thịt bò 17. Mực 18. Động vật có vỏ (bao gồm hàu, quả bóng bay và trai) 19. Hạt thông
+
+※ Thực đơn có thể thay đổi tùy theo hoàn cảnh của trường.</div><div class="err">난류·아황산류 오역, 전복→&#x27;풍선&#x27;, 메뉴 음역 · 1.4s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">30</span></header><div class="text">Thân thiện với môi trường Bobbigami Spinach (5.6.18) Dorajio Dori (5.6.13) Chiến thắng Vịt lửa (2.5.6.13) Khoai lang (5.6.13) Cabin KIMCHI (9) Neurobus 2. Sữa 3. Sữa 3 kiều mạch 4. đậu phộng 5. đậu nành 6. lúa mì 7. cá thu 8. cua 9. Tôm 10. Thịt lợn 11. Peach 12. Cà chua 13. Lưu huỳnh &amp; cao độ 14. Quả óc chó 15. Gà 16. Thịt bò 17. Vỏ 18. Chứa Hàu, bào ngư, hến) 19. Cây thông ※ Chế độ ăn kiêng có thể được thay đổi bởi trường học.</div><div class="err">메뉴 깨짐, 1번 누락, 우유 중복 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">96</span></header><div class="text">Cơm đen thân thiện với môi trường
+
+Súp nghêu và rau bina tương đậu nành (5.6.18)
+
+Salad củ chuông và dưa chuột (5.6.13)
+
+Vịt quay Jjajang (2.5.6.13)
+
+Kẹo khoai lang (5.6.13)
+
+Kim chi bắp cải Napa (9)
+
+Cuốn củ cải trà xanh
+
+Thông tin dị ứng
+
+1. Trứng 2. Sữa 3. Kiều mạch 4. Đậu phộng 5. Đậu nành 6. Lúa mì 7. Cá thu 8. Cua 9. Tôm 10. Thịt lợn 11. Đào 12. Cà chua 13. Sulfite 14. Quả óc chó 15. Thịt gà 16. Thịt bò 17. Mực 18. Hải sản (bao gồm hàu, bào ngư và trai) 19. Hạt thông
+
+※ Thực đơn có thể thay đổi tùy thuộc vào tình hình của trường.</div><div class="err">알레르기 정확, 맛탕→&#x27;Kẹo(사탕)&#x27; 등 메뉴명 어색</div></article>
+</div></div>
+<div class="lang"><h3>인도네시아어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill bad">15</span></header><div class="text">Nasi beras hitam ramah lingkungan
+
+Sup doenjang udang dan bayam (5.6.18)
+
+Salad doraji (5.6.13)
+
+Ayam Goreng dengan Nasi Goreng Saus Tofu (2.5.6.13)
+
+Sup rasa ubi jalar (5.6.13)
+
+Kimchi kubis (9)
+
+Ssam kacang hijau dengan teh hijau
+
+Informasi alergi
+
+1. Turbulensi 2. Susu 3. Jagung manis 4. Kacang tanah 5. Kedelai 6. Gandum 7. Ikan teri 8. Udang laut 9. Udang 10. Daging babi 11. Persik 12. Tomat 13. Zat sulfurous 14. Kacang mete 15. Daging ayam 16. Daging sapi 17. Udang laut 18. Makanan laut (termasuk kerang, tiram, dan kerang merah) 19. Kacang pinus
+
+※ Pola makan dapat diubah tergantung pada keadaan sekolah.</div><div class="err">알레르기 6건 오역, 바지락→새우, 짜장오리불고기→&#x27;닭튀김과 볶음밥&#x27; · 5.9s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill bad">68</span></header><div class="text">Beras hitam ramah lingkungan
+
+Sup miso kerang dan bayam (5.6.18)
+
+Doragioi Saengchae (5.6.13)
+
+Bulgogi bebek Jjajang (2.5.6.13)
+
+Sup ubi jalar (5.6.13)
+
+Kubis kimchi (9)
+
+Mussam teh hijau
+
+Informasi alergi
+
+1. Turbulen 2. Susu 3. Soba 4. Kacang 5. Kedelai 6. Gandum 7. Makarel 8. Kepiting 9. Udang 10. Daging babi 11. Persik 12. Tomat 13. Asam sulfat 14. Kenari 15. Ayam 16. Daging sapi 17. Cumi-cumi 18. Kerang (termasuk tiram, balon, dan kerang) 19. Kacang pinus
+
+※ Menu dapat berubah tergantung pada keadaan sekolah.</div><div class="err">난류·아황산류 오역, 전복→&#x27;balon&#x27; · 1.2s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">20</span></header><div class="text">Bayam Blackbeam Bobbigami yang Ramah Lingkungan (5.6.18) Dorajio Dori (5.6.13) Menangkan Fire Duck (2.5.6.13) Kentang Jalar (5.6.13) Kimchi Kimchi (9) Neurobus 2. Susu 3 Susu 3. Soba 4. Kacang kaki 5. Kedelai 6. Gandum 7. Mackerel 8. Kepiting 9. Udang 10. Paceh 11. Peach 12. Tomat 13. Sulfur &amp; Pitch 14. Ayam 16. Squid 18. Shell (berisi tiram, abalone, kerang) 19. Pine Nut ※ Diet dapat diubah oleh materi sekolah.</div><div class="err">메뉴 깨짐, 소고기·오징어 등 알레르기 항목 누락 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">96</span></header><div class="text">Nasi Hitam Ramah Lingkungan
+
+Sup Doenjang Kerang dan Bayam (5.6.18)
+
+Salad Akar Bunga Bellflower dan Timun (5.6.13)
+
+Bulgogi Bebek Jjajang (2.5.6.13)
+
+Permen Ubi Jalar (5.6.13)
+
+Kimchi Kubis Napa (9)
+
+Lapisan Lobak Teh Hijau
+
+Informasi Alergi
+
+1. Telur 2. Susu 3. Buckwheat 4. Kacang Tanah 5. Kedelai 6. Gandum 7. Ikan Makarel 8. Kepiting 9. Udang 10. Babi 11. Persik 12. Tomat 13. Sulfit 14. Kenari 15. Ayam 16. Daging Sapi 17. Cumi-cumi 18. Kerang (termasuk tiram, abalone, dan remis) 19. Kacang Pinus
+
+※ Menu dapat berubah sewaktu-waktu tergantung ketersediaan keadaan sekolah.</div><div class="err">알레르기 정확, 맛탕→&#x27;Permen(사탕)&#x27;, 무쌈→&#x27;Lapisan&#x27;</div></article>
+</div></div>
+<div class="lang"><h3>일본어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill bad">20</span></header><div class="text">環境に優しい黒米ご飯
+
+ハマグリ千切り人参味噌汁（5.6.18）
+
+ドラジオイ生菜（5.6.13）
+
+チャジャンアヒルブルゴギ（2.5.6.13）
+
+じゃがいも味湯（5.6.13）
+
+白菜キムチ（9）
+
+緑茶ムサム
+
+アレルギー情報
+
+1.ナルトウ 2.牛乳 3.蕎麦 4.ピーナッツ 5.大豆 6.小麦 7.イカ 8.エビ 9.カニ 10.豚肉 11.桃 12.トマト 13.アミノ酸塩類 14.アーモンド 15.鶏肉 16.牛肉 17.イカ 18.貝類（牡蠣、あわじ、ホタテ含む） 19.ゴマ
+
+※食事は学校の事情により変更されることがあります。</div><div class="err">알레르기 7건 오역, 시금치→&#x27;千切り人参&#x27;, 고구마→감자 · 5.2s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill bad">68</span></header><div class="text">環境に優しい黒米ご飯
+
+バジラシとほうれん草の味噌汁 (5.6.18)
+
+ドラジオイ生菜 (5.6.13)
+
+ジャージャー鴨プルコギ (2.5.6.13)
+
+さつまいも味湯 (5.6.13)
+
+白菜キムチ (9)
+
+緑茶ムサム
+
+アレルギー情報
+
+1. 乱流 2. 牛乳3。 そば 4. ピーナッツ5。 大豆 6. ミル7。 サバ 8. カニ9。 エビ 10. 豚肉 11. 桃 12. トマト13。 亜硫酸類 14. くるみ 15. 鶏肉 16. 牛肉 17. イカ 18. 貝類（カキ、アワビ、ムール貝を含む）19. 松の実
+
+※ 食事は学校の事情により変更されることがあります。</div><div class="err">난류·밀 오역, 바지락 음역, 구두점 깨짐 · 0.8s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">15</span></header><div class="text">環境に優しいBlackbeam Bobbigami Spinach（5.6.18）ドラジョ・ドリ（5.6.13）Winアヒル火災（2.5.6.13）スイートポテト（5.6.13）キャベツキムチ（9）Neurobus 2.牛乳3.牛乳4.ピーナッツ4.ピーナッツ5.大豆6.小麦7.マッカーェル8.カニ11.豚肉9.ピーチ12.スルマト13.チキン17.シェル（含有）カキ、アバロン、ムール貝）19.松ナッツ※議事録は学校の問題によって変更することができます。</div><div class="err">알레르기 번호·항목 뒤섞임, &#x27;Diet&#x27;를 &#x27;議事録&#x27;으로 오역 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">99</span></header><div class="text">環境に優しい黒米ご飯
+アサリとほうれん草の味噌汁 (5.6.18)
+キキョウとキュウリの和え物 (5.6.13)
+鴨肉のジャジャン炒め (2.5.6.13)
+サツマイモの大学芋風 (5.6.13)
+白菜キムチ (9)
+緑茶風味の大根の甘酢漬け
+
+アレルギー情報
+1.卵類 2.牛乳 3.そば 4.落花生 5.大豆 6.小麦 7.サバ 8.カニ 9.エビ 10.豚肉 11.桃 12.トマト 13.亜硫酸塩 14.クルミ 15.鶏肉 16.牛肉 17.イカ 18.貝類（カキ、アワビ、ムール貝を含む） 19.松の実
+
+※ 献立は学校の都合により変更される場合があります。</div><div class="err">알레르기·메뉴 모두 정확</div></article>
+</div></div>
+<div class="lang"><h3>중국어(간체)</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill bad">63</span></header><div class="text">环保黑米饭
+
+蛤蜊菠菜酱油汤（5.6.18）
+
+大根生菜（5.6.13）
+
+辣酱鸭肉泡菜牛排（2.5.6.13）
+
+红薯汤（5.6.13）
+
+白菜泡菜 (9)
+
+绿茶无叶卷饼
+
+过敏信息
+
+1.海藻 2.牛奶 3.荞麦 4.花生 5.大豆 6.小麦 7.金枪鱼 8.蟹 9.虾 10.猪肉 11.桃子 12.番茄 13.亚硫酸盐 14.核桃 15.鸡肉 16.牛肉 17.鱿鱼 18.贝类（包括牡蛎、扇贝、贻贝） 19.松子
+
+※饮食可能会因为学校的情况而改变。</div><div class="err">난류·고등어 오역, 도라지→&#x27;大根(무)&#x27;, 짜장오리불고기 오역 · 4.7s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">83</span></header><div class="text">环保黑米饭
+
+蛤蜊菠菜大酱汤 (5.6.18)
+
+哆啦A夢生菜 (5.6.13)
+
+炸酱鸭烤肉 (2.5.6.13)
+
+红薯味汤 (5.6.13)
+
+白菜泡菜 (9)
+
+绿茶萝卜包
+
+过敏信息
+
+1. 乱流2。 牛奶3。 荞麦4。 花生5。 大豆6。 小麦7。 鲭鱼8。 螃蟹9。 虾10。 猪肉11。 桃子12。 番茄13。 亚硫酸类 14. 核桃15。 鸡肉16。 牛肉17。 鱿鱼18。 贝类（包括牡蛎、鲍腹、贻贝）19. 松子
+
+※菜单可能会根据学校情况而变更。</div><div class="err">난류→&#x27;乱流&#x27;, 도라지오이생채→&#x27;哆啦A夢(도라에몽)生菜&#x27; · 0.7s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">30</span></header><div class="text">环保Blackbeam Bobbigami Spinach（5.6.18）Dorajio Dori（5.6.13）Win Duck Fire（2.5.6.13）红薯（5.6.13）白菜泡菜（9）Neurobus 2.牛奶3 Milk 3. Buckwheat 4. Peanuts 5. Soybeans 6. Wheat 7. Mackerel 8. Crab 9. Shrimp 10. Pork 11. Peach 12. Tomato 13. Sulfur＆Pitch 14. Walnuts 15. Chicken 16. Beef 17. Squid 18. Shell (containing牡蛎，鲍鱼，贻贝）19。松果※可以通过学习改变饮食。</div><div class="err">메뉴·알레르기 대부분 영어로 남음 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">98</span></header><div class="text">环保黑米
+
+蛤蜊菠菜大酱汤 (5.6.18)
+
+桔梗根黄瓜沙拉 (5.6.13)
+
+炸酱鸭肉烤肉 (2.5.6.13)
+
+红薯糖 (5.6.13)
+
+大白菜泡菜 (9)
+
+绿茶萝卜卷
+
+过敏信息
+
+1. 鸡蛋 2. 牛奶 3. 荞麦 4. 花生 5. 大豆 6. 小麦 7. 鲭鱼 8. 螃蟹 9. 虾 10. 猪肉 11. 桃子 12. 番茄 13. 亚硫酸盐 14. 核桃 15. 鸡肉 16. 牛肉 17. 鱿鱼 18. 贝类（包括牡蛎、鲍鱼和贻贝） 19. 松树坚果
+
+※ 菜单可能因学校情况而有所调整。</div><div class="err">알레르기 정확, 잣→&#x27;松树坚果&#x27; 어색</div></article>
+</div></div>
+</div></details>
+<details id="school-notice-library-books"><summary><span class="cat">학교공지</span>학교도서관 정기도서 구입 예정 목록</summary><div class="body">
+<div class="lang"><h3>한국어 원문</h3><pre class="src">우리 학교도서관에서 2026학년도 제2차 정기도서로 구입 예정인 자료를 게시하오니 의견이 있는 학생, 학부모, 교직원께서는 다음의 내용을 참고하여 의견서를 제출하여 주시기 바랍니다.
+
+1. 게시기간: 2026. 10. 1.(목) ~ 2026. 10. 7.(수)
+2. 의견서 제출방법: 네이버 폼
+
+※ 별도 의견이 없을 경우 학교도서관운영위원회 심의 후 구입 예정.
+※ 추후에 입고 되는 도서는 학교도서관운영위원회 심의를 거쳐 구매하므로 목록이 수정될 수 있음.</pre></div>
+<div class="lang"><h3>영어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">94</span></header><div class="text">We are posting materials that are scheduled to be purchased as the second semester textbooks for the 2026 academic year at our school library. Students, parents, and teachers who have any opinions are requested to refer to the following information and submit their comments.
+
+1. Posting period: 2026. 10. 1. (Thu) ~ 2026. 10. 7. (Wed)
+
+2. How to submit opinions: Naver form
+
+※ If there is no other opinion, it will be purchased after deliberation by the School Library Operation Committee.
+
+※ The list may be modified because the books that will be received later will be purchased after deliberation by the School Library Operation Committee.</div><div class="err">&#x27;정기도서&#x27;를 &#x27;textbooks&#x27;로 오역 · 4.1s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">93</span></header><div class="text">Our school library will post the materials scheduled to be purchased as the second regular book for the 2026 academic year, so students, parents, and faculty members who have opinions, please refer to the following contents and submit the opinion form.
+
+1. Posting period: 2026. 10. 1.( Thursday) ~ 2026. 10. 7.( Number)
+
+2. How to submit an opinion: Naver form
+
+※ If there is no separate opinion, it will be purchased after deliberation by the school library steering committee.
+
+※ Books that will be received later are purchased through the deliberation of the school library steering committee, so the list may be modified.</div><div class="err">수요일 &#x27;(수)&#x27;를 &#x27;Number&#x27;로 오역 · 0.6s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">75</span></header><div class="text">Posted by the school library in our school library 2026, and posted materials that are scheduled to be purchased with the secondary regular book. Please submit your opinion by referring to the following contents, with a student, parent, and faculty. 1. Publishing Period: 2026. 10. 1. (Thursday) ~ 2026. 10. 7. (Number) 2. Method of Submission: Naver Foam ※ If there is no separate opinion, you will be purchased after the school library. ※ The books that are listed in the future are purchased through the School Library Steering Committee deliberation, so the list may be modified.</div><div class="err">첫 문장 깨짐, &#x27;Naver Foam&#x27;, &#x27;you will be purchased&#x27; · 0.1s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">98</span></header><div class="text">We are posting the list of materials scheduled for purchase as part of the second regular acquisition for the 2026 academic year. Students, parents, and staff members who wish to provide feedback are requested to review the details below and submit their comments.
+
+1. Posting Period: October 1, 2026 (Thu) – October 7, 2026 (Wed)
+2. How to Submit Feedback: Naver Form
+
+※ If no feedback is received, the materials will be purchased following deliberation by the School Library Steering Committee.
+※ The list is subject to change, as the final purchase of materials is determined through deliberation by the School Library Steering Committee.</div><div class="err">두 번째 ※ 문장 의미가 약간 바뀜</div></article>
+</div></div>
+<div class="lang"><h3>베트남어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">94</span></header><div class="text">Thư viện trường chúng tôi xin đăng tải các tài liệu dự kiến sẽ được mua làm sách giáo khoa chính thức lần thứ hai cho năm học 2026, vì vậy các học sinh, phụ huynh và giáo viên có ý kiến vui lòng tham khảo nội dung sau và nộp bản kiến nghị.
+
+1. Thời gian đăng tải: 2026. 10. 1. (Thứ Năm) ~ 2026. 10. 7. (Thứ Tư)
+
+2. Cách nộp bản kiến nghị: Mẫu đơn Naver
+
+※ Nếu không có ý kiến riêng, dự kiến sẽ mua sau khi xem xét của Ủy ban vận hành thư viện trường học.
+
+※ Các cuốn sách sẽ được nhập kho sau này sẽ được mua sau khi được Ủy ban điều hành thư viện trường học xem xét, do đó danh sách có thể được sửa đổi.</div><div class="err">&#x27;정기도서&#x27;를 &#x27;교과서&#x27;로 오역 · 4.6s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">93</span></header><div class="text">Thư viện trường học của chúng tôi sẽ đăng các tài liệu dự kiến sẽ được mua dưới dạng cuốn sách thông thường thứ hai cho năm học 2026, vì vậy học sinh, phụ huynh và giảng viên có ý kiến, vui lòng tham khảo các nội dung sau và gửi biểu mẫu ý kiến.
+
+1. Thời gian đăng: 2026. 10. 1. ( Thứ Năm) ~ 2026. 10. 7. ( Số)
+
+2. Cách gửi ý kiến: Biểu mẫu Naver
+
+※ Nếu không có ý kiến riêng, nó sẽ được mua sau khi được ban chỉ đạo thư viện trường cân nhắc.
+
+※ Những cuốn sách sẽ nhận được sau này được mua thông qua sự cân nhắc của ban chỉ đạo thư viện trường học, vì vậy danh sách có thể được sửa đổi.</div><div class="err">수요일을 &#x27;Số(숫자)&#x27;로 오역 · 1.2s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">70</span></header><div class="text">Được đăng bởi Thư viện trường học trong Thư viện trường học của chúng tôi 2026, và các tài liệu được đăng dự kiến sẽ được mua với cuốn sách thường xuyên thứ cấp. Vui lòng gửi ý kiến của bạn bằng cách đề cập đến các nội dung sau, với một sinh viên, phụ huynh và giảng viên. 1. Thời gian xuất bản: 2026. 10. 10. (Thứ năm) ~ 2026. 10. 7. (Số) 2. Phương thức gửi: Naver Bọt ※ Nếu không có ý kiến riêng biệt, bạn sẽ được mua sau thư viện trường. ※ Những cuốn sách được liệt kê trong tương lai được mua thông qua sự cân nhắc của Ban chỉ đạo Thư viện Trường học, vì vậy danh sách có thể được sửa đổi.</div><div class="err">게시 시작일 1일→10일, &#x27;Naver Bọt(거품)&#x27;, 줄바꿈 소실 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">98</span></header><div class="text">Chúng tôi xin thông báo danh sách các tài liệu dự kiến sẽ được thư viện trường mua trong đợt bổ sung thường kỳ lần 2 năm học 2026. Học sinh, phụ huynh và giáo viên có ý kiến đóng góp vui lòng tham khảo thông tin chi tiết dưới đây và gửi ý kiến bằng văn bản.
+
+1. Thời gian thông báo: Từ ngày 1 tháng 10 năm 2026 (Thứ Năm) đến ngày 7 tháng 10 năm 2026 (Thứ Tư)
+
+2. Phương thức gửi ý kiến: Qua biểu mẫu Naver
+
+※ Nếu không có ý kiến cụ thể nào được gửi, các tài liệu sẽ được mua sau khi Ủy ban Điều hành Thư viện Trường xem xét.
+
+※ Danh sách có thể thay đổi do các sách được bổ sung trong tương lai sẽ được mua sau khi Ủy ban Điều hành Thư viện Trường xem xét.</div><div class="err">좋음</div></article>
+</div></div>
+<div class="lang"><h3>인도네시아어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">95</span></header><div class="text">Perpustakaan sekolah kami mengunggah materi yang dijadwalkan dibeli sebagai buku teks reguler periode kedua tahun ajaran 2026, sehingga siswa, orang tua, dan tenaga pengajar yang memiliki pendapat diharapkan merujuk pada isi berikut dan mengirimkan surat pendapat.
+
+1. Periode publikasi: 2026. 10. 1. (Kamis) ~ 2026. 10. 7. (Rabu)
+
+2. Cara pengajuan surat pendapat: Formulir Naver
+
+※ Jika tidak ada pendapat tambahan, akan dibeli setelah pertimbangan oleh Komite Pengelolaan Perpustakaan Sekolah.
+
+※ Buku yang akan masuk nanti akan dibeli setelah disetujui oleh Komite Pengelolaan Perpustakaan Sekolah, sehingga daftar dapat diubah.</div><div class="err">&#x27;정기도서&#x27;를 &#x27;buku teks&#x27;로 오역 · 4.6s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">94</span></header><div class="text">Perpustakaan sekolah kami akan memposting materi yang dijadwalkan untuk dibeli sebagai buku reguler kedua untuk tahun akademik 2026, jadi siswa, orang tua, dan anggota fakultas yang memiliki pendapat, silakan merujuk ke konten berikut dan kirimkan formulir pendapat.
+
+1. Periode posting: 2026. 10. 1. ( Kamis) ~ 2026. 10. 7. ( Nomor)
+
+2. Cara mengirimkan pendapat: Formulir Naver
+
+※ Jika tidak ada pendapat terpisah, itu akan dibeli setelah musyawarah oleh komite pengarah perpustakaan sekolah.
+
+※ Buku-buku yang akan diterima nanti dibeli melalui musyawarah komite pengarah perpustakaan sekolah, sehingga daftarnya dapat dimodifikasi.</div><div class="err">수요일을 &#x27;Nomor&#x27;로 오역 · 1.0s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">70</span></header><div class="text">Diposting oleh Perpustakaan Sekolah di Perpustakaan Sekolah kami 2026, dan diposting materi yang dijadwalkan untuk dibeli dengan buku reguler sekunder. Silakan kirimkan pendapat Anda dengan merujuk pada konten berikut, dengan siswa, orang tua, dan fakultas. 1. Periode Penerbitan: 2026. 10. 1. (Kamis) ~ 2026. 10. (Nomor) 2. Metode pengajuan: NAVER FOAM ※ Jika tidak ada pendapat terpisah, Anda akan dibeli setelah perpustakaan sekolah. ※ Buku-buku yang tercantum di masa depan dibeli melalui musyawarah Komite Pengarah Perpustakaan Sekolah, sehingga daftar tersebut dapat dimodifikasi.</div><div class="err">게시 종료일 누락, &#x27;NAVER FOAM&#x27;, &#x27;Anda akan dibeli&#x27; · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">98</span></header><div class="text">Kami memposting daftar bahan-bahan yang dijadwalkan akan dibeli oleh perpustakaan sekolah sebagai bagian dari koleksi reguler ke-2 untuk tahun ajaran 2026. Siswa, orang tua, dan anggota fakultas yang memiliki pendapat diminta untuk merujuk pada detail berikut dan mengirimkan pendapat tertulis.
+
+1. Periode Pengumuman: 1 Oktober 2026 (Kamis) – 7 Oktober 2026 (Rabu)
+
+2. Metode Pengiriman: Formulir Naver
+
+※ Jika tidak ada pendapat khusus yang disampaikan, barang-barang tersebut akan dibeli setelah pertimbangan oleh Komite Operasional Perpustakaan Sekolah.
+
+※ Daftar ini dapat berubah karena buku-buku yang ditambahkan di masa mendatang akan dibeli setelah pertimbangan oleh Komite Operasional Perpustakaan Sekolah.</div><div class="err">자료→&#x27;bahan-bahan(재료)&#x27;</div></article>
+</div></div>
+<div class="lang"><h3>일본어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">99</span></header><div class="text">当校図書館では、2026学年度第2次定期書籍として購入予定の資料を掲載いたしますので、意見のある学生、保護者、教職員の皆様は、以下の内容をご参照の上、意見書をご提出ください。
+
+1. 投稿期間：2026. 10. 1.(木) ~ 2026. 10. 7.(水)
+
+2.意見書提出方法：ネイバーフォーム
+
+※別途意見がない場合、学校図書館運営委員会審議後購入予定。
+
+※後日入荷する書籍は学校図書館運営委員会審議を経て購入するためリストが修正されることがあります。</div><div class="err">좋음 · 3.5s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">93</span></header><div class="text">当校の図書館では、2026学年度第2回定期図書として購入予定の資料を掲載いたしますので、ご意見のある学生、保護者、教職員の皆様は、以下の内容をご参照の上、意見書をご提出くださいますようお願い申し上げます。
+
+1. 掲載期間：2026年。 10. 1.( 木) ~ 2026. 10. 7.( 数)
+
+2. 意見書の提出方法：Naverフォーム
+
+※ 別途意見がない場合は、学校図書館運営委員会の審議を経て購入する予定です。
+
+※ 今後入荷する書籍は、学校図書館運営委員会の審査を経て購入されるため、目録が修正されることがあります。</div><div class="err">수요일을 &#x27;数&#x27;로 오역, &#x27;2026年。&#x27; · 0.7s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">70</span></header><div class="text">学校ライブラリー2026の学校図書館によって投稿され、二次の通常の本で購入される予定の資料。 次の内容を参照して、学生、親、および教員であなたの意見を提出してください。 出版期間：2026.10.1.（木曜日）~2026.10.（番号）2。（番号）2。海軍泡※別々の意見がない場合は、学校の図書館の後に購入されます。 ※将来掲載されている本は、学校の図書館の運営委員会の審議を通じて購入されているので、リストは変更されることがあります。</div><div class="err">&#x27;海軍泡(해군 거품)&#x27;, 날짜 깨짐, 첫 문장 깨짐 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">99</span></header><div class="text">本校図書館にて2026年度第2次定期図書として購入を予定している資料を掲示いたします。ご意見のある生徒、保護者、教職員の皆様は、以下の内容をご確認の上、意見書をご提出ください。
+
+1. 掲示期間：2026年10月1日（木）～ 2026年10月7日（水）
+2. 意見書提出方法：Naverフォーム
+
+※ 特に意見がない場合は、学校図書館運営委員会の審議を経て購入する予定です。
+※ 今後受け入れる図書は学校図書館運営委員会の審議を経て購入するため、リストが変更される場合があります。</div><div class="err">좋음</div></article>
+</div></div>
+<div class="lang"><h3>중국어(간체)</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">99</span></header><div class="text">现在我校图书馆公布计划于2026学年度第二期定期图书中购买的资料，如有意见的学生、家长、教职员工请参考以下内容提交意见书。
+
+1. 发布期间：2026. 10. 1.(周四) ~ 2026. 10. 7.(周三)
+
+2.意见书提交方法：Naver表单
+
+※如果没有其他意见的话，将在学校图书馆运营委员会审议后购买。
+
+※以后到货的书籍会经过学校图书馆运营委员会的审议后购买，所以列表可能会修改。</div><div class="err">좋음 · 3.5s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">93</span></header><div class="text">我们学校图书馆将发布2026学年第2次定期图书预定购买的资料，有意见的学生、家长、教职员工请参考以下内容提交意见书。
+
+1. 发布时间：2026。 10. 1.( 周四) ~ 2026. 10. 7.（ 数）
+
+2. 提交意见书的方法：Naver表格
+
+※如果没有单独的意见，学校图书馆运营委员会审议后预定购买。
+
+※以后入库的图书经过学校图书馆运营委员会的审议后购买，所以目录可能会被修改。</div><div class="err">수요일을 &#x27;数&#x27;로 오역 · 0.6s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill warn">75</span></header><div class="text">由学校图书馆发布于我们学校图书馆2026年，并张贴于次要常规书籍购买的材料。 请提及以下内容，使用学生，父母和教师提交您的意见。 1.出版期限：2026.10.1。（周四）〜2026. 10. 7.（编号）2。提交方法：Naver泡沫※如果没有单独的意见，您将在学校图书馆之后购买。 ※未来上市的书籍通过学校图书馆指导委员会审议，所以可以修改清单。</div><div class="err">&#x27;Naver泡沫&#x27;, &#x27;您将在…之后购买&#x27; 오역 · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">99</span></header><div class="text">现公布我校图书馆2026学年第二期常规馆藏采购计划。学生、家长及教职工如有任何意见，请参考以下详情并提交书面意见。
+
+1. 公布时间：2026年10月1日（周四）至2026年10月7日（周三）
+
+2. 提交方式：Naver表单
+
+※ 如未收到任何意见，图书馆将由学校图书馆运营委员会审议后决定采购。
+
+※ 未来新增图书将由学校图书馆运营委员会审议后决定采购，因此本清单可能会有所变动。</div><div class="err">좋음</div></article>
+</div></div>
+</div></details>
+<details id="school-notice-robotics-challenge"><summary><span class="cat">학교공지</span>청소년 로보틱스 챌린지 참가 안내</summary><div class="body">
+<div class="lang"><h3>한국어 원문</h3><pre class="src">전주용와초등학교에서 추진하고 있는 2026년 AI 중점학교-학생들의 AI·디지털 역량 함양과 AI 교육 기회 확대를 위한 다양한 교육활동과 관련하여 과학기술정보통신부가 주최하고 한국과학창의재단이 주관하는 「2026년 청소년 로보틱스 챌린지」 전북지역 초등부문 기초예선대회를 후원하여 개최한다고 합니다. 관심 있는 학생과 학부모님께서는 아래의 내용 및 첨부파일을 참고해 주시기 바랍니다.
+
+가. 행사명: 2026년 청소년 로보틱스 챌린지 전북지역 초등부문 기초예선대회
+나. 일시: 2026. 10. 14.(수) 14:00~18:30
+다. 장소: 전주용와초등학교 강당
+라. 참가대상: 전북특별자치도 관내 초등학교 4~6학년 학생
+마. 모집인원: 100명 내외(선착순 모집)
+바. 신청기간: 2026. 10. 8.(목) 18:00까지
+사. 참가방법: 3~4인 1팀 구성 또는 1인 개별 신청 가능
+아. 참가비: 무료(로봇·노트북 등 모든 장비 현장 제공, 별도 준비물 없음)
+자. 주요내용: 기초 로봇·코딩 교육, 엔지니어링 미션 「우리 동네 자원 수거 로봇 챌린지」
+차. 신청방법: 전국민 AI 경진대회 홈페이지를 통한 온라인 신청
+카. 참가혜택: 참가자 전원 수료증 발급, 간식 및 기념품 제공, 우수팀 본선 참가 기회 제공
+타. 문의: 청소년 로보틱스 챌린지 예선 운영 사무국</pre></div>
+<div class="lang"><h3>영어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">94</span></header><div class="text">Jeonju Yongwa Elementary School, which is promoting the 2026 AI Focus School, is hosting the “2026 Youth Robotics Challenge” preliminary competition for the Jeollabuk‑do region’s elementary school division, which is sponsored by the Ministry of Science and ICT and organized by the Korea Foundation for Science and Creativity, in support of various educational activities aimed at developing students’ AI and digital competencies and expanding AI education opportunities. Interested students and parents are requested to refer to the information below and the attached files.
+
+a. Event Name: 2026 Youth Robotics Challenge Jeollabuk-do Region Primary School Division Preliminary Competition
+
+Me. Date and time: 2026. 10. 14. (Wed) 2:00 PM~6:30 PM
+
+All. Place: Jeonju Yongwa Elementary School auditorium
+
+L. Participants: Elementary school students in grades 4~6 in Jeollabuk-do Special Self-Governing Province
+
+Mr. Number of applicants: About 100 people (first come, first served)
+
+B. Application period: until 18:00 on Thursday, October 8, 2026.
+
+4. How to participate: You can form a team of 3~4 people or apply individually as one person.
+
+A. Participation fee: Free (all equipment such as robots and notebooks will be provided on site, no separate preparation required)
+
+A. Main content: Basic robot and coding education, engineering mission &quot;Our Neighborhood Resource Collection Robot Challenge&quot;
+
+Car. Application method: Online application through the website of the nationwide AI competition.
+
+Ka. Participation benefits: Issuance of certificates of completion to all participants, provision of snacks and souvenirs, opportunity for outstanding teams to participate in the finals.
+
+T. Inquiries: Office for the operation of the preliminary round of the Youth Robotics Challenge</div><div class="err">목록 기호 직역(Me., All., Mr., Car.) · 10.7s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">84</span></header><div class="text">In relation to various educational activities to cultivate AI and digital capabilities of students and expand AI education opportunities in 2026, which is promoted by Jeonju Yongwa Elementary School, the Ministry of Science, Technology, Information and Communication and organized by the Korea Science and Creativity Foundation, the &quot;2026 Youth Robotics Challenge&quot; Jeonbuk Regional Elementary School Basic Qualifying Competition will be held. Interested students and parents, please refer to the following contents and the attached file.
+
+Go. Event name: 2026 Youth Robotics Challenge Jeonbuk Regional Elementary School Basic Pre-election Competition
+
+I. Date and time: 2026. 10. 14.( Wed) 14:00~18:30
+
+All. Location: Jeonju Yongwa Elementary School Auditorium
+
+Ra. Participants: 4th to 6th grade students of elementary schools in Jeonbuk Special Self-Governing Province
+
+Ma. Number of recruits: around 100 (first-come, first-served basis)
+
+Bar. Application period: 2026. 10. 8.( Thursday) until 18:00
+
+Buy. How to participate: 3 to 4 people can form a team or 1 person can apply individually
+
+Ah. Participation fee: Free (all equipment such as robots and laptops is provided on site, no separate supplies)
+
+Come on. Main content: Basic robot and coding education, engineering mission &quot;Our neighborhood resource collection robot challenge&quot;
+
+Car. How to apply: Online application through the National AI Contest website
+
+Car. Participation benefits: All participants are issued certificates of completion, snacks and souvenirs are provided, and the opportunity to participate in the excellent team finals is provided.
+
+Get on. Inquiries: Youth Robotics Challenge Preliminary Operation Office</div><div class="err">목록 기호 &#x27;Buy., Come on., Get on.&#x27;, 첫 문장 주체 뒤섞임, &#x27;Pre-election&#x27; · 1.0s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">45</span></header><div class="text">In the 2026 AI Fault School, which is pursued in Jeonju and Elementary School - Study on various educational activities to expand AI and digital capabilities and AI educational opportunities, Organized &quot;2026 Youth Robotics Challenge&quot; Jeonbuk Regional Elementary Department of Elementary Department of Elementary Department. Please refer to the following and attachments below. Go. Event Name: 2026 Youth Robotics Challenge Jeonbuk Regional Elementary Division Basic Funding Tournament. Date: 2026. 10. 14. (Wed) 14: 00-18: 30. Place: Jeonju and Elementary School Auditorium. Participants: Jeonbuk Special Self-Governing Province Eucharist Elementary School 4 to 6th Grade Students. Recruitment: 100 people (recruiting the first place) bar. Application Period: 2026. 10. 8. (Thursday) From 18:00. Participation: 3 to 4 people 1 team configuration or one individual Application Ah. Participation fee: Free (robot, notebook, etc.), etc., etc., not all equipment, no separate preparation). Main contents: Basic robot, coding education, engineering mission &quot;Our neighborhood resource collection robot challenge&quot; tea. How to Apply: Online Application Car through the National AI Gyeongjin Competition homepage. Participants Benefits: Provides participant power certificates, delivering snacks, souvenirs, excellent team main line participation opportunities. Inquiry: Youth Robotics Challenge Preliminary Operation Office</div><div class="err">&#x27;AI Fault School&#x27;, 학교명 &#x27;용와&#x27;→&#x27;and&#x27;, &#x27;18:00까지&#x27;→&#x27;18:00부터&#x27;, &#x27;Eucharist&#x27; · 0.2s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">97</span></header><div class="text">As part of the initiatives for the &quot;2026 AI-Focused School&quot; program at Jeonju Yongwa Elementary School—which aims to foster students&#x27; AI and digital competencies and expand opportunities for AI education—the school is hosting the &quot;2026 Youth Robotics Challenge&quot; (Jeonbuk Region Elementary Division Preliminary Round). This event is sponsored by the Ministry of Science and ICT and organized by the Korea Foundation for the Advancement of Science and Creativity (KOFAC). Interested students and parents are encouraged to review the details below and the attached files.
+
+a. Event Name: 2026 Youth Robotics Challenge (Jeonbuk Region Elementary Division Preliminary Round)
+b. Date/Time: October 14, 2026 (Wed), 14:00–18:30
+c. Venue: Jeonju Yongwa Elementary School Auditorium
+d. Eligibility: Elementary school students (grades 4–6) within Jeonbuk State
+e. Capacity: Approx. 100 participants (first-come, first-served basis)
+f. Application Deadline: October 8, 2026 (Thu), 18:00
+g. Participation Method: Teams of 3–4 members or individual registration
+h. Participation Fee: Free (all equipment, including robots and laptops, provided on-site; no personal items required)
+i. Key Activities: Basic robotics and coding training; engineering mission: &quot;Neighborhood Resource Collection Robot Challenge&quot;
+j. Application Method: Online registration via the National AI Competition website
+k. Benefits: Certificate of completion for all participants; snacks and souvenirs provided; opportunity for top-performing teams to advance to the finals Inquiries: Youth Robotics Challenge Preliminary Round Operations Office</div><div class="err">주최·후원 관계 일부 바뀜, 마지막 &#x27;문의&#x27; 줄이 앞 줄에 붙음</div></article>
+</div></div>
+<div class="lang"><h3>베트남어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill warn">88</span></header><div class="text">Về các hoạt động giáo dục đa dạng nhằm phát triển năng lực AI và kỹ năng số của học sinh cũng như mở rộng cơ hội học tập về AI tại Trường Tiểu học Jeonju Yongwa đang được triển khai, Bộ Khoa học và Công nghệ Thông tin và Truyền thông sẽ tài trợ và tổ chức Giải sơ bộ cấp cơ sở cho khu vực Jeollabuk-do thuộc hạng mục Tiểu học của &quot;Thử thách Robot học sinh tuổi teen 2026&quot;, do Quỹ Khám phá Khoa học Hàn Quốc chủ trì. Quý học sinh và phụ huynh quan tâm vui lòng tham khảo nội dung bên dưới và các tệp đính kèm.
+
+a. Tên sự kiện: Giải sơ bộ cơ bản khu vực tiểu học khu vực Jeollabuk-do của Thử thách Robot học cho Thanh thiếu niên năm 2026
+
+Tôi. Thời gian: 2026. 10. 14. (Thứ Tư) 14:00~18:30
+
+Tất cả. Địa điểm: Hội trường trường tiểu học Jeonju Yongwa
+
+L. Đối tượng tham gia: Học sinh lớp 4~6 tiểu học trong phạm vi tỉnh tự trị đặc biệt Jeollabuk-do
+
+Số lượng tuyển dụng: khoảng 100 người (tuyển theo thứ tự đăng ký)
+
+Thời gian đăng ký: đến 18:00 ngày 8/10/2026 (Thứ Năm).
+
+4. Cách tham gia: Có thể thành lập 1 đội từ 3~4 người hoặc mỗi người có thể đăng ký riêng.
+
+A. Phí tham gia: Miễn phí (cung cấp tất cả thiết bị như robot, máy tính xách tay tại hiện trường, không cần chuẩn bị vật dụng riêng)
+
+1. Nội dung chính: Giáo dục robot và lập trình cơ bản, Nhiệm vụ kỹ thuật 「Thử thách Robot thu gom tài nguyên trong khu phố của chúng ta」
+
+Xe. Cách đăng ký: Đăng ký trực tuyến qua trang web của Cuộc thi AI toàn quốc dành cho công dân.
+
+C. Ưu đãi tham gia: Phát hành chứng nhận hoàn thành cho tất cả người tham gia, cung cấp đồ ăn nhẹ và quà lưu niệm, tạo cơ hội cho đội xuất sắc tham gia vòng chung kết.
+
+T. Liên hệ: Văn phòng điều hành vòng sơ tuyển Thử thách Robot học cho Thanh thiếu niên</div><div class="err">첫 문장 주최·후원 관계 뒤섞임, 목록 기호 직역 · 13.5s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">80</span></header><div class="text">Liên quan đến các hoạt động giáo dục khác nhau để trau dồi AI và khả năng kỹ thuật số của học sinh và mở rộng cơ hội giáo dục AI vào năm 2026, được thúc đẩy bởi Trường Tiểu học Jeonju Yongwa, Bộ Khoa học, Công nghệ, Thông tin và Truyền thông và được tổ chức bởi Quỹ Khoa học và Sáng tạo Hàn Quốc, &quot;Thử thách Robot Thanh niên 2026&quot; Cuộc thi Trình độ Cơ bản Trường Tiểu học Khu vực Jeonbuk sẽ được tổ chức. Học sinh và phụ huynh quan tâm, vui lòng tham khảo các nội dung sau và tệp đính kèm.
+
+Đi. Tên sự kiện: Cuộc thi tiền bầu cử cơ bản của trường tiểu học khu vực Jeonbuk năm 2026
+
+Tôi. Ngày và giờ: 2026. 10. Số 14. ( Thứ Tư) 14:00~18:30
+
+Tất cả. Địa điểm: Thính phòng trường tiểu học Jeonju Yongwa
+
+Ra. Những người tham gia: Học sinh lớp 4 đến lớp 6 của các trường tiểu học ở tỉnh tự trị đặc biệt Jeonbuk
+
+Mẹ ơi. Số lượng tân binh: khoảng 100 (cơ sở ai đến trước được phục vụ trước)
+
+Quán bar. Thời gian nộp đơn: 2026. 10. Số 8. ( Thứ Năm) đến 18:00
+
+Mua. Cách tham gia: 3 đến 4 người có thể thành lập nhóm hoặc 1 người có thể đăng ký cá nhân
+
+À. Phí tham gia: Miễn phí (tất cả các thiết bị như robot và máy tính xách tay đều được cung cấp tại chỗ, không có nguồn cung cấp riêng)
+
+Cố lên. Nội dung chính: Robot cơ bản và giáo dục mã hóa, nhiệm vụ kỹ thuật &quot;Thử thách robot thu thập tài nguyên khu phố của chúng tôi&quot;
+
+Ô tô. Cách đăng ký: Đăng ký trực tuyến thông qua trang web Cuộc thi AI Quốc gia
+
+Ô tô. Lợi ích tham gia: Tất cả những người tham gia đều được cấp giấy chứng nhận hoàn thành, đồ ăn nhẹ và quà lưu niệm được cung cấp, và cơ hội tham gia vào vòng chung kết đội xuất sắc được cung cấp.
+
+Đi lên. Thắc mắc: Văn phòng điều hành sơ bộ Thử thách Robot Thanh niên</div><div class="err">목록 기호 &#x27;Mẹ ơi., Quán bar., Đi lên.&#x27;, 날짜에 &#x27;Số&#x27;가 붙음, &#x27;사전 선거&#x27;로 오역 · 2.0s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">40</span></header><div class="text">Trong trường Lỗi AI năm 2026, được theo đuổi tại Jeonju và tiểu học - nghiên cứu các hoạt động giáo dục khác nhau để mở rộng khả năng AI và kỹ thuật số và cơ hội giáo dục AI, có tổ chức &quot;2026 Thử thách Robot Robot của Bộ Ngoại giáo Khu vực Jeonbuk Sở tiểu học. Vui lòng tham khảo các tệp đính kèm sau đây dưới đây. Đi. Tên sự kiện: 2026 Thanh niên Robotics Thử thách Giải đấu tài trợ cơ bản của Bộ phận Tiểu học khu vực Jeonbuk. Ngày: 2026. 10. 14. (WED) 14: 00-18: 30. Nơi: Thính phòng trường tiểu học Jeonju và tiểu học. Người tham gia: Tỉnh Tỉnh Tỉnh Jeonbuk Trường tiểu học Thánh Thể Trường tiểu học 4 đến lớp 6. Tuyển dụng: 100 người (tuyển dụng vị trí đầu tiên). Thời gian nộp đơn: 2026. 10. 8. (Thứ Năm) từ 18:00. Tham gia: 3 đến 4 người 1 Cấu hình nhóm hoặc một ứng dụng cá nhân ah. Phí tham gia: miễn phí (robot, máy tính xách tay, v.v.), v.v., v.v., không phải tất cả các thiết bị, không chuẩn bị riêng). Nội dung chính: Robot cơ bản, giáo dục mã hóa, sứ mệnh kỹ thuật &quot;Trà chui phòng sưu tập tài nguyên khu phố của chúng tôi. Cách áp dụng: Xe ứng dụng trực tuyến thông qua trang chủ cạnh tranh AI Gyeongjin quốc gia. Lợi ích của người tham gia: Cung cấp giấy chứng nhận quyền lực của người tham gia, cung cấp đồ ăn nhẹ, quà lưu niệm, cơ hội tham gia của đội chính của đội tuyệt vời. Thắc mắc: Robot Tuổi trẻ Thử thách Văn phòng Hoạt động sơ bộ</div><div class="err">학교명 소실, 마감 시간 반대로 오역, 참가비 문장 깨짐 · 0.3s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">99</span></header><div class="text">Liên quan đến các hoạt động giáo dục khác nhau mà Trường Tiểu học Jeonju Yongwa đang thúc đẩy với tư cách là trường học tập trung vào AI năm 2026—nhằm bồi dưỡng năng lực AI và kỹ thuật số của học sinh và mở rộng cơ hội giáo dục AI—trường đang tài trợ và đăng cai Vòng sơ loại cơ bản cho cấp Tiểu học khu vực Jeonbuk của cuộc thi &quot;Thử thách Robot Thanh niên 2026&quot;, do Bộ Khoa học và Công nghệ Thông tin chủ trì và Quỹ Khoa học và Sáng tạo Hàn Quốc tổ chức. Học sinh và phụ huynh quan tâm vui lòng xem chi tiết bên dưới và tệp đính kèm.
+
+A. Tên sự kiện: Cuộc thi Robot Thanh niên 2026 - Vòng sơ loại cấp tiểu học khu vực Jeonbuk
+
+B. Ngày và giờ: 14 tháng 10 năm 2026 (Thứ Tư), 14:00–18:30
+
+C. Địa điểm: Hội trường trường tiểu học Jeonju Yongwa
+
+D. Đối tượng tham gia: Học sinh lớp 4-6 thuộc các trường tiểu học trong tỉnh tự trị Jeonbuk
+
+E. Số lượng người tham gia: Khoảng 100 người (Ưu tiên người đăng ký trước)
+
+F. Thời gian đăng ký: Đến 18:00 ngày 8 tháng 10 năm 2026 (Thứ Năm)
+
+G. Hình thức tham gia: Đăng ký theo nhóm 3-4 người hoặc cá nhân.
+
+H. Phí tham gia: Miễn phí (Tất cả thiết bị, bao gồm robot và máy tính xách tay, được cung cấp tại chỗ; không cần mang theo vật liệu riêng).
+
+I. Nội dung chính: Giáo dục cơ bản về robot và lập trình, nhiệm vụ kỹ thuật &quot;Thử thách Robot Thu thập Tài nguyên Khu phố của Chúng ta&quot;.
+
+J. Phương thức đăng ký: Đăng ký trực tuyến qua trang web Cuộc thi Trí tuệ Nhân tạo Quốc gia.
+
+K. Quyền lợi người tham gia: Giấy chứng nhận hoàn thành được cấp cho tất cả người tham gia, đồ ăn nhẹ và quà lưu niệm được cung cấp, và cơ hội cho các đội xuất sắc tiến vào vòng chung kết.
+
+L. Thắc mắc: Liên hệ Văn phòng Điều hành Vòng sơ loại Cuộc thi Robot Thanh niên.</div><div class="err">좋음</div></article>
+</div></div>
+<div class="lang"><h3>인도네시아어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill warn">85</span></header><div class="text">Ditambahkan bahwa kegiatan ini akan diselenggarakan dengan dukungan dari &quot;Turnamen Lomba Dasar Bagian Dasar Sekolah Dasar Wilayah Jeollabuk-do&quot; &quot;Tantangan Robotika Remaja 2026&quot;, yang diselenggarakan oleh Kementerian Sains dan Teknologi Informasi serta Komunikasi dan diselenggarakan oleh Yayasan Sains dan Inovasi Korea, terkait berbagai kegiatan pendidikan yang dipimpin oleh Sekolah Dasar Jeonju Yongwa-cho untuk pengembangan kompetensi AI dan digital siswa serta memperluas kesempatan pendidikan AI pada tahun 2026. Siswa dan orang tua yang berminat diharapkan dapat merujuk pada informasi di bawah ini serta berkas lampiran.
+
+A. Nama Acara: Kompetisi Lomba Dasar Bagian Dasar Wilayah Jeollabuk-do Kompetisi Tantangan Robotika Remaja 2026
+
+Saya. Tanggal dan waktu: 2026. 10. 14. (Rabu) 14:00~18:30
+
+Semua. Tempat: Aula Sekolah Dasar Yongwa, Jeonju
+
+L. Sasaran peserta: siswa kelas 4~6 sekolah dasar di wilayah Provinsi Otonom Khusus Jeollabuk-do
+
+Jumlah pendaftar: sekitar 100 orang (pendaftaran berdasarkan urutan kedatangan)
+
+B. Periode pendaftaran: hingga 2026. 10. 8. (Kamis) 18:00.
+
+4. Cara berpartisipasi: Dapat dibentuk tim dari 3~4 orang atau dapat mendaftar secara individual untuk 1 orang.
+
+Ah. Biaya partisipasi: Gratis (semua peralatan seperti robot·laptop disediakan di lokasi, tidak perlu membawa barang tambahan)
+
+A. Isi utama: Pendidikan dasar robotik dan pemrograman, misi rekayasa &quot;Tantangan Robot Pengumpulan Sumber Daya Kelurahan Kita&quot;
+
+Mobil. Cara pendaftaran: Pendaftaran daring melalui situs web Kompetisi AI untuk seluruh warga negara.
+
+Ka. Manfaat partisipasi: Penerbitan sertifikat kelulusan untuk seluruh peserta, penyediaan camilan dan oleh-oleh, serta kesempatan bagi tim unggulan untuk berpartisipasi di babak final.
+
+T. Pertanyaan: Kantor Operasional Tahap Pra-Putaran Tantangan Robotika Remaja</div><div class="err">첫 문장 크게 깨짐, 목록 기호 직역(Saya., Mobil.) · 14.0s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill warn">84</span></header><div class="text">Sehubungan dengan berbagai kegiatan pendidikan untuk menumbuhkan kemampuan AI dan digital siswa dan memperluas peluang pendidikan AI pada tahun 2026, yang dipromosikan oleh Sekolah Dasar Jeonju Yongwa, Kementerian Sains, Teknologi, Informasi dan Komunikasi dan diselenggarakan oleh Yayasan Sains dan Kreativitas Korea, &quot;Tantangan Robotika Pemuda 2026&quot; Kompetisi Kualifikasi Dasar Sekolah Dasar Sekolah Dasar Regional Jeonbuk akan diadakan. Siswa dan orang tua yang tertarik, silakan merujuk ke konten berikut dan file terlampir.
+
+Pergi. Nama acara: Tantangan Robotika Pemuda 2026 Kompetisi Pra-pemilihan Dasar Sekolah Dasar Regional Jeonbuk
+
+Saya. Tanggal dan waktu: 2026. 10. 14. ( Rabu) 14:00~18:30
+
+Semua. Lokasi: Auditorium Sekolah Dasar Jeonju Yongwa
+
+Ra. Peserta: Siswa kelas 4 hingga 6 sekolah dasar di Provinsi Pemerintahan Sendiri Khusus Jeonbuk
+
+Ibu. Jumlah rekrutan: sekitar 100 (yang pertama datang, pertama dilayani)
+
+Bar. Periode aplikasi: 2026. 10. 8. ( Kamis) sampai pukul 18:00
+
+Beli. Cara berpartisipasi: 3 hingga 4 orang dapat membentuk tim atau 1 orang dapat mendaftar secara individu
+
+Ah. Biaya partisipasi: Gratis (semua peralatan seperti robot dan laptop disediakan di lokasi, tidak ada persediaan terpisah)
+
+Ayo. Konten utama: Robot dasar dan pendidikan pengkodean, misi teknik &quot;Tantangan robot pengumpulan sumber daya lingkungan kami&quot;
+
+Mobil. Cara mendaftar: Aplikasi online melalui situs web Kontes AI Nasional
+
+Mobil. Manfaat partisipasi: Semua peserta diberikan sertifikat penyelesaian, makanan ringan dan suvenir disediakan, dan kesempatan untuk berpartisipasi dalam final tim yang sangat baik disediakan.
+
+Naik. Pertanyaan: Kantor Operasi Awal Tantangan Robotika Pemuda</div><div class="err">목록 기호 &#x27;Pergi., Ibu., Beli.&#x27;, &#x27;Pra-pemilihan&#x27; · 1.7s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">40</span></header><div class="text">Di Sekolah 2026 AI Fault, yang dikejar di Jeonju dan Sekolah Dasar - mempelajari berbagai kegiatan pendidikan untuk memperluas kemampuan AI dan Digital dan peluang pendidikan AI, terorganisir &quot;2026 Tantangan Robotika Pemuda&quot; Jeonbuk Departemen Dasar Dasar Dasar Departemen Departemen Dasar. Silakan merujuk ke berikut dan lampiran di bawah ini. Pergi. Nama Acara: 2026 Robotika Pemuda Tantangan Jeonbuk Dasar Divisi Dasar Dasar dana. Tanggal: 2026. 10. 14. (Rab) 14: 00-18: 30. Tempat: Jeonju dan Auditorium Sekolah Dasar. Peserta: Jeonbuk Provinsi Khusus Sekolah Khusus Sekolah Dasar Eucharist 4 hingga 6 siswa kelas 6. Rekrutmen: 100 orang (merekrut tempat pertama) bar. Periode aplikasi: 2026. 10. 8. (Kamis) dari pukul 18:00. Partisipasi: 3 hingga 4 orang 1 Konfigurasi tim atau satu aplikasi individu Ah. Biaya partisipasi: gratis (robot, notebook, dll.), Dll, dll., Tidak semua peralatan, tidak ada persiapan terpisah). Isi Utama: Robot Dasar, Pendidikan Pengkodean, Misi Teknik &quot;Koleksi Robot Koleksi Robot Lingkungan Kami&quot;. Cara Mendaftar: Mobil Aplikasi Online Melalui Homepage Kompetisi Nasional Ai Gyeongjin. Manfaat Peserta: Menyediakan sertifikat daya peserta, memberikan camilan, suvenir, peluang partisipasi jalur utama tim yang sangat baik. Permintaan: Tantangan Robotika Pemuda Tantangan Operasi Pendahuluan</div><div class="err">학교명 소실, 마감 시간 반대로 오역, &#x27;Eucharist&#x27; · 0.3s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">99</span></header><div class="text">Sehubungan dengan berbagai kegiatan pendidikan yang dipromosikan oleh Sekolah Dasar Jeonju Yongwa sebagai sekolah yang berfokus pada AI tahun 2026—yang bertujuan untuk mengembangkan kemampuan AI dan digital siswa serta memperluas peluang pendidikan AI—sekolah ini mensponsori dan menyelenggarakan Babak Penyisihan Dasar untuk Divisi Sekolah Dasar Wilayah Jeonbuk dari &quot;Tantangan Robotika Pemuda 2026,&quot; yang diselenggarakan oleh Kementerian Sains dan Teknologi Informasi dan diorganisir oleh Yayasan Sains dan Kreativitas Korea. Siswa dan orang tua yang berminat diminta untuk merujuk pada detail di bawah ini dan file terlampir.
+
+A. Nama Acara: Tantangan Robotika Pemuda 2026 Babak Penyisihan Dasar Divisi Sekolah Dasar Wilayah Jeonbuk
+
+B. Tanggal dan Waktu: 14 Oktober 2026 (Rabu), 14:00–18:30
+
+C. Tempat: Auditorium Sekolah Dasar Jeonju Yongwa
+
+D. Persyaratan: Siswa kelas 4–6 dari sekolah dasar di Provinsi Otonomi Khusus Jeonbuk
+
+E. Jumlah Peserta: Sekitar 100 (Siapa cepat, dia dapat)
+
+F. Periode Pendaftaran: Hingga pukul 18:00 pada 8 Oktober 2026 (Kamis)
+
+G. Cara Partisipasi: Mendaftar sebagai tim yang terdiri dari 3–4 orang atau secara individu.
+
+H. Biaya Partisipasi: Gratis (Semua peralatan, termasuk robot dan laptop, disediakan di tempat; tidak diperlukan bahan terpisah).
+
+I. Konten Utama: Pendidikan robotika dan pemrograman dasar, misi teknik &quot;Tantangan Robot Pengumpulan Sumber Daya Lingkungan Kita.&quot;
+
+J. Metode Pendaftaran: Daftar secara online melalui situs web Kompetisi AI Nasional.
+
+K. Manfaat Peserta: Sertifikat penyelesaian diberikan kepada semua peserta, makanan ringan dan suvenir disediakan, dan kesempatan bagi tim-tim unggulan untuk maju ke babak final.
+
+L. Pertanyaan: Kantor Operasi Babak Penyisihan Tantangan Robotika Pemuda</div><div class="err">좋음</div></article>
+</div></div>
+<div class="lang"><h3>일본어</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill warn">89</span></header><div class="text">全州用和小学校で推進している2026年AI重点学校－生徒のAI・デジタル能力の育成とAI教育機会の拡大のための様々な教育活動に関連し、科学技術情報通信部が主催し韓国科学創造財団が主宰する「2026年青少年ロボティクスチャレンジ」全北地域小学部門基礎予選大会を後援して開催するとされています。関心のある生徒と保護者の皆様は、以下の内容および添付ファイルをご参照ください。
+
+a. 行事名：2026年青少年ロボティクスチャレンジ全北地域小中学校部基礎予選大会
+
+私。日時：2026. 10. 14.(水) 14:00~18:30
+
+全て。場所：全州ヨンワ小学校講堂
+
+ラ。参加対象：全羅北道特別自治道管内小学校4～6年生の生徒
+
+マ。募集人員：100名前後（先着順募集）
+
+バ。申請期間：2026. 10. 8.(木) 18:00まで
+
+四。参加方法：3～4人1チーム構成または1人個別申請可能
+
+あ。参加費：無料（ロボット・ノートパソコン等全ての設備現場提供、別途準備物なし）
+
+自．主な内容：基礎ロボット・コーディング教育、エンジニアリングミッション「うちの近所の資源収集ロボットチャレンジ」
+
+車。申請方法：全国民AI競合大会ホームページを通じたオンライン申請
+
+カ。参加特典：参加者全員に修了証の発行、軽食および記念品の提供、優秀チームの本戦参加機会の提供
+
+タ。お問い合わせ：青少年ロボティクスチャレンジ予選運営事務局</div><div class="err">목록 기호 직역(私。四。自．車。), &#x27;小中学校部&#x27;로 중학교 추가 · 10.0s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">93</span></header><div class="text">全州用和小学校が推進している2026年AI重点校―学生のAI・デジタル能力の育成とAI教育機会拡大を目的とした様々な教育活動に関し、科学技術情報通信部が主催し、韓国科学創造財団が主催する「2026年青少年ロボティクスチャレンジ」全北地域小学校部基礎予選大会を後援して開催するとのことです。 ご関心のある学生および保護者の皆様は、以下の内容および添付ファイルをご参照ください。
+
+行け。 イベント名：2026年青少年ロボティクスチャレンジ全北地域小学校部門基礎予選大会
+
+私。 日時: 2026. 10. 14.( 水) 14:00~18:30
+
+すべて。 場所：全州用和小学校講堂
+
+ラ。 参加対象：全羅北道特別自治道の小学校4〜6年生
+
+マ。 募集人数：100名前後（先着順募集）
+
+バー。 申請期間：2026年。 10. 8.( 木) 18:00まで
+
+サ。 参加方法：3〜4名で1チーム構成、または1名個別に申し込むことが可能です
+
+あ。 参加費：無料（ロボットやノートパソコン等、すべての機材を現場で提供、別途用意物はありません）
+
+さあ。 主な内容：基礎ロボット・コーディング教育、エンジニアリングミッション「私たちの街の資源回収ロボットチャレンジ」
+
+車。 申し込み方法：全国民AIコンテストのホームページを通じたオンライン申し込み
+
+カ。 参加特典：参加者全員に修了証を発行し、軽食や記念品を提供し、優秀チームの本選への参加機会を提供します
+
+乗って。 お問い合わせ：青少年ロボティクスチャレンジ予選運営事務局</div><div class="err">목록 기호 &#x27;行け。さあ。乗って。&#x27; · 1.2s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">40</span></header><div class="text">2026年のAI断層学校では、エオンジュと小学校で追求されています -  AIとデジタル能力とAI教育の機会を拡大するためのさまざまな教育活動に関する研究。小学校小学部部科。 以下の以下の添付ファイルを参照してください。 移動します。 イベント名：2026ユースロボティクスチャレンジJeonbuk地方小学校基本資金調達トーナメント。 日付：2026.10.14.（Wed）14：00~18：30。場所：静泉と小学校講堂。 参加者：Jeonbuk特別自治省eucharist小学校4年生4年生の学生。 募集：100人（最初の場所を募集する）バー。 アプリケーション期間：2026.10.8（木曜日）18:00から。 参加：3から4人1チーム構成または1つの個々のアプリケーションああ。 参加料：すべての機器ではなく、全機器ではなく、別の準備がない、無料（ロボット、ノートブックなど）などです。 主な内容：基本的なロボット、コーディング教育、エンジニアリングミッション「私たちの近隣リソースコレクションロボットチャレンジ」ティー。 適用方法：National Ai Gyeongjinコンペティションのホームページを通じてオンラインアプリケーションカー。 参加者の利点：参加者の電力証明書、軽食、お土産、優れたチームの主要線参加の機会を提供します。 お問い合わせ：ユースロボティクスチャレンジ暫定営業所</div><div class="err">&#x27;AI断層学校&#x27;, 학교명 소실, &#x27;18:00から&#x27;, &#x27;アプリケーションカー&#x27; · 0.4s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">99</span></header><div class="text">全州龍臥（チョンジュ・ヨンワ）小学校が推進する「2026年AI重点校」事業（生徒のAI・デジタル能力の育成およびAI教育機会の拡大を目的とした多様な教育活動）の一環として、科学技術情報通信部が主催し韓国科学創意財団が主管する「2026年青少年ロボティクス・チャレンジ」全北地域・小学校部門の基礎予選大会が開催されます。関心をお持ちの生徒および保護者の皆様は、以下の内容および添付ファイルをご参照ください。
+
+ア. 行事名：2026年青少年ロボティクス・チャレンジ 全北地域・小学校部門 基礎予選大会
+イ. 日時：2026年10月14日（水） 14:00～18:30
+ウ. 場所：全州龍臥小学校 講堂
+エ. 参加対象：全北特別自治道内の小学校4～6年生の児童
+オ. 募集人数：100名程度（先着順）
+カ. 申込期間：2026年10月8日（木） 18:00まで
+キ. 参加方法：3～4名で1チームを構成、または1名での個人申し込みが可能
+ク. 参加費：無料（ロボット・ノートパソコン等の機材はすべて現地で提供、持参物不要）
+ケ. 主な内容：基礎ロボット・コーディング教育、エンジニアリング・ミッション「私たちの町の資源回収ロボット・チャレンジ」
+コ. 申込方法：「全国民AIコンテスト」ホームページからのオンライン申し込み
+サ. 参加特典：参加者全員に修了証を発行、軽食および記念品を提供、優秀チームには本選への参加機会を付与
+シ.お問い合わせ：青少年ロボティクス・チャレンジ予選運営事務局</div><div class="err">목록 기호 ア.~シ., 학교명 한자 &#x27;龍臥&#x27;는 추정 표기</div></article>
+</div></div>
+<div class="lang"><h3>중국어(간체)</h3><div class="trio">
+<article class="tr"><header><span>Apple Intelligence</span><span class="pill good">94</span></header><div class="text">关于全州龙和小学正在推进的2026年AI重点学校——旨在培养学生AI·数字能力并扩大AI教育机会的各种教育活动，科学技术信息通信部主办、韩国科学创意基金会主导的《2026年青少年机器人挑战》全罗北道地区小学部基础预选赛将获得赞助举办。有兴趣的学生和家长请参考以下内容及附件文件。
+
+a. 活动名称：2026年青少年机器人挑战全罗北道地区小学部基础预选赛
+
+我。时间：2026. 10. 14.(周三) 14:00~18:30
+
+全部。地点：全州龙和小学礼堂
+
+拉。参加对象：全罗北道管内小学4~6年级学生
+
+马.招聘人数：100人左右（先到先得）
+
+巴。申请期间：2026. 10. 8.(周四) 18:00前
+
+四.参加方法：3~4人组成1个团队，或1人单独申请
+
+啊。参加费：免费（提供机器人·笔记本电脑等所有设备现场，无需另行准备物品）
+
+自。主要内容：基础机器人·编程教育，工程任务“我们社区资源收集机器人挑战”
+
+车。申请方法：通过全国民AI竞赛大会官网的在线申请
+
+卡。参加优惠：所有参赛者发放结业证书，提供零食及纪念品，提供优秀团队进入决赛的机会。
+
+其他。咨询：青少年机器人挑战预选运营办公室</div><div class="err">목록 기호 직역(我。全部。车。) · 8.8s</div></article>
+<article class="tr"><header><span>Apple 기본 모델</span><span class="pill good">94</span></header><div class="text">全州龙和小学正在推进的2026年AI重点学校-为了培养学生的AI·数字能力和扩大AI教育机会的各种教育活动，由科学技术信息通信部主办，韩国科学创意基金会主管的“2026年青少年机器人挑战赛”全北地区小学部门基础预选赛将赞助举办。 感兴趣的学生和家长请参考以下内容及附件。
+
+去。 活动名称：2026年青少年机器人挑战赛全北地区小学部门基础预选大赛
+
+我。 时间：2026。 10. 14.（ 周三）14:00~18:30
+
+都。 地点：全州龙和小学礼堂
+
+啦。 参加对象：全北特别自治道管内小学4~6年级学生
+
+马。 招募人数：100人左右（先到先得）
+
+吧。 申请期限：2026。 10. 8.（ 周四）到18:00
+
+四。 参加方法：3~4人1组或1人可以单独申请
+
+啊。 参加费：免费（机器人、笔记本电脑等所有设备现场提供，无单独准备物）
+
+好了。 主要内容：基础机器人·编码教育，工程任务“我们小区资源收集机器人挑战”
+
+车。 申请方法：通过全民AI大赛主页在线申请
+
+卡。 参加优惠：参加者全员颁发结业证，提供零食和纪念品，提供参加优秀团队总决赛的机会
+
+上车。 咨询：青少年机器人挑战赛预选运营事务局</div><div class="err">목록 기호 &#x27;去。好了。上车。&#x27; · 1.0s</div></article>
+<article class="tr"><header><span>ML Kit</span><span class="pill bad">40</span></header><div class="text">在2026年的AI故障学校，这是在金州和小学的追求中，研究各种教育活动，扩大AI和数字能力和AI教育机会，组织“2026年青年机器人挑战”Jeonbuk地区小学部基本部门的小学部。 请参阅以下内容和附件。 去。 活动名称：2026年青年机器人挑战Jeonbuk地区小学基础资金锦标赛。 日期：2026.14 .14。（周三）14：00-18：30。地点：金盟和小学礼堂。 与会者：Jeonbuk特殊自治省政府小学4至6年级学生。 招聘：100人（招聘第一个地方）酒吧。 申请期限：2026。10. 8.（星期四）从18:00开始。 参与：3至4人1团队配置或一个个人申请啊。 参与费用：免费（机器人，笔记本等）等等，并非所有设备，没有单独的准备）。 主要内容：基本机器人，编码教育，工程使命“我们的邻里资源收集机器人挑战”茶。 如何申请：在线申请汽车通过国家艾庆津比赛主页。 与会者福利：提供参与者的电力证书，提供零食，纪念品，优秀的团队主线参与机会。 咨询：青年机器人挑战初步运营办公室</div><div class="err">&#x27;AI故障学校&#x27;, 학교명 &#x27;金州和小学&#x27;, 날짜 깨짐, &#x27;从18:00开始&#x27; · 0.3s</div></article>
+<article class="tr"><header><span>Google 번역 (클라우드)</span><span class="pill good">98</span></header><div class="text">全州龙华小学致力于打造2026年人工智能学校，并为此开展了多项教育活动，旨在培养学生的人工智能和数字能力，拓展人工智能教育机会。为此，学校赞助并承办了由韩国科学技术信息通信部主办、韩国科学创意财团承办的“2026青少年机器人挑战赛”全北地区小学组基础预赛。感兴趣的学生和家长请参阅以下详情及附件。
+
+A. 活动名称：2026年全北特别自治道小学组青少年机器人挑战赛基础预赛
+
+B. 日期及时间：2026年10月14日（星期三）14:00–18:30
+
+C. 地点：全州龙华小学礼堂
+
+D. 参赛资格：全北特别自治道内小学四至六年级学生
+
+E. 参赛人数：约100人（先到先得）
+
+F. 报名截止日期：2026年10月8日（星期四）18:00
+
+G. 参赛方式：可组队（3-4人）或个人参赛
+
+H. 参赛费用：免费（所有设备，包括机器人和笔记本电脑，均由主办方提供；无需自带材料）。
+
+I. 主要内容：基础机器人和编程教育，工程任务“我们的社区资源收集机器人挑战赛”。
+
+J. 报名方式：通过全国人工智能大赛网站在线报名。
+
+K. 参赛福利：所有参赛者均可获得结业证书，提供茶点和纪念品，优秀团队有机会晋级决赛。
+
+L. 咨询：青少年机器人挑战赛预赛运营办公室</div><div class="err">학교명 &#x27;龙华&#x27;는 추정 표기</div></article>
+</div></div>
+</div></details>
+</section></div>
+</body>
+</html>
