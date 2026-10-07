@@ -1,61 +1,55 @@
-# On-Device Translation Sample Application (iOS 15.0+)
+# On-Device Translation Sample (iOS 16.0+)
 
-This sample SwiftUI application demonstrates how to integrate and run the `OnDeviceTranslationEngine` to perform offline, local Korean-to-English machine translation.
+한국어 문장을 여러 온디바이스 번역 엔진으로 번역해 결과를 나란히 비교하는 샘플 앱입니다.
 
----
+| 엔진 | 지원 OS | 대상 언어 | 언어팩 |
+|---|---|---|---|
+| Core ML (opus-mt-ko-en) | iOS 16.0+ | 영어 | 앱에 포함 |
+| Apple Translation | iOS 26+ | 영어·베트남어·인도네시아어·일본어·중국어(간체) | 시스템 다운로드 (삭제는 설정 앱) |
+| Google ML Kit | iOS 16.0+ | 영어·베트남어·인도네시아어·일본어·중국어(간체) | 앱에서 다운로드/삭제 (언어당 약 30MB) |
 
-## Step-by-Step Xcode Integration Guide
+최소 버전이 iOS 16.0인 이유: 엔진이 사용하는 `swift-sentencepiece`가 iOS 16 이상을 요구합니다.
 
-### 1. Create a New Xcode Project
-1. Open **Xcode** (v14.0 or newer).
-2. Select **File > New > Project...**
-3. Choose **iOS > App** and click **Next**.
-4. Name the project `OnDeviceTranslationSample`.
-5. Select **SwiftUI** for the Interface and **Swift** for the Language.
-6. Click **Next** and save the project.
+## 준비
 
----
+```bash
+brew install xcodegen
+gem install cocoapods   # 이미 설치되어 있으면 생략
+```
 
-### 2. Add the Swift Package Dependency
-You can add the translation engine library to your Xcode project as a local dependency:
-1. In Xcode, select **File > Add Packages...**
-2. Click **Add Local...** at the bottom left.
-3. Select the folder `iOS/OnDeviceTranslationEngine/` from this repository.
-4. Set the Package Product dependency to your target **OnDeviceTranslationSample** and click **Add Package**.
+## 서명 설정
 
-*(Alternatively, once pushed, you can search for your private GitHub repository URL: `https://github.com/brownsoo/OnDeviceTranslation.git` and add it using your credentials.)*
+```bash
+cp Configs/Local.example.xcconfig Configs/Local.xcconfig
+```
 
----
+`Configs/Local.xcconfig`에 본인의 `DEVELOPMENT_TEAM`과 `APP_BUNDLE_ID`를 입력합니다. 이 파일은 커밋되지 않습니다.
 
-### 3. Add Model and Tokenizer Resources to the App Target
-The local translation engine requires the Core ML model packages and vocabulary mappings to be bundled with the app.
+## 프로젝트 생성
 
-1. Locate the following files in this project:
-   * **CoreML Models:**
-     * `models/encoder.mlpackage`
-     * `models/decoder.mlpackage`
-   * **Tokenizer Model:**
-     * `tokenizer_files/source.spm` (Korean SentencePiece model)
-   * **Vocabulary Mappings:**
-     * `models/source_id_to_vocab_id.json`
-     * `models/target_vocab_id_to_piece.json`
-2. **Drag and drop** these 5 files/folders into your Xcode Project Navigator.
-3. In the dialog that appears, make sure to choose:
-   * [x] **Copy items if needed**
-   * [x] **Create groups** (not folder references)
-   * [x] **Add to targets:** Check **`OnDeviceTranslationSample`**
-4. Click **Finish**.
+```bash
+./generate.sh
+open OnDeviceTranslationSample.xcworkspace
+```
 
----
+파일을 추가·삭제한 뒤에는 `./generate.sh`를 다시 실행하세요. `.xcodeproj`가 아니라 `.xcworkspace`를 열어야 ML Kit이 링크됩니다.
 
-### 4. Replace SwiftUI Source Files
-Copy the provided sample files into your project:
-* Replace the contents of your Xcode project's `ContentView.swift` with [ContentView.swift](file:///Users/brownsoo/Workspace/OnDeviceTranslation/iOS/OnDeviceTranslationSample/ContentView.swift).
-* Replace the contents of your Xcode project's `OnDeviceTranslationSampleApp.swift` with [OnDeviceTranslationSampleApp.swift](file:///Users/brownsoo/Workspace/OnDeviceTranslation/iOS/OnDeviceTranslationSample/OnDeviceTranslationSampleApp.swift).
+## 실행과 테스트
 
----
+ML Kit은 Apple Silicon 시뮬레이터 지원에 제약이 있으므로 실제 기기에서 실행합니다.
 
-### 5. Build and Run
-1. Select an iOS simulator or a connected physical iOS device (iOS 15.0+ or macOS 13.0+ for Mac designed apps).
-2. Click **Run** (⌘R).
-3. The app will launch, compile the Core ML models on-device, and become ready to translate Korean to English fully offline.
+```bash
+xcodebuild test -workspace OnDeviceTranslationSample.xcworkspace -scheme OnDeviceTranslationSample -destination 'platform=iOS,id=<기기 UDID>' -allowProvisioningUpdates
+```
+
+기기가 서명 팀에 등록되어 있지 않다면 `-allowProvisioningDeviceRegistration`을 함께 넘기면 자동 등록됩니다.
+
+## 사용법
+
+1. 한국어 문장을 입력하고 대상 언어(EN/VI/ID/JA/ZH)를 고른 뒤 [번역]을 누릅니다.
+2. 언어팩이 없는 엔진은 카드에 [다운로드] 버튼이 표시됩니다.
+3. 툴바의 [언어팩]에서 엔진별 설치 상태를 보고 받거나 지울 수 있습니다.
+
+## 참고
+
+Core ML 모델은 CPU와 Neural Engine에서만 실행합니다. iOS에서 GPU(MPS)로 실행하면 디코더의 가변 길이 입력 처리에서 크래시가 발생합니다.
