@@ -5,6 +5,8 @@ final class ComparisonViewModel: ObservableObject {
     @Published var inputText: String
     @Published private(set) var target: TargetLanguage = .english
     @Published private(set) var cards: [ProviderKind: CardState] = [:]
+    /// Rewrites list markers and weekdays and uses the fixed allergy legend before translating.
+    @Published var usesPreprocessing = true
 
     let providers: [TranslationProvider]
 
@@ -70,11 +72,14 @@ final class ComparisonViewModel: ObservableObject {
         let text = inputText
         let target = self.target
         let providers = self.providers
+        let segments: [TranslationSegment] = usesPreprocessing
+            ? TranslationPreprocessor.segments(text, target: target)
+            : [.translate(text)]
         let task = Task { [weak self] in
             await withTaskGroup(of: Void.self) { group in
                 for provider in providers {
                     group.addTask {
-                        await self?.run(provider, text: text, target: target, generation: generation)
+                        await self?.run(provider, segments: segments, target: target, generation: generation)
                     }
                 }
             }
@@ -83,7 +88,7 @@ final class ComparisonViewModel: ObservableObject {
         return task
     }
 
-    private func run(_ provider: TranslationProvider, text: String, target: TargetLanguage, generation: Int) async {
+    private func run(_ provider: TranslationProvider, segments: [TranslationSegment], target: TargetLanguage, generation: Int) async {
         guard provider.supports(target) else {
             update(provider.kind, .unsupported, generation: generation)
             return
@@ -96,7 +101,14 @@ final class ComparisonViewModel: ObservableObject {
         update(provider.kind, .translating, generation: generation)
         let start = Date()
         do {
-            let result = try await provider.translate(text, to: target)
+            var parts: [String] = []
+            for segment in segments {
+                switch segment {
+                case .translate(let text): parts.append(try await provider.translate(text, to: target))
+                case .fixed(let text): parts.append(text)
+                }
+            }
+            let result = TranslationPreprocessor.join(parts)
             update(provider.kind, .result(text: result, seconds: Date().timeIntervalSince(start)), generation: generation)
         } catch {
             update(provider.kind, .error(error.localizedDescription), generation: generation)

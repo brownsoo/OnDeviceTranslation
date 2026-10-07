@@ -38,6 +38,15 @@ struct ComparisonView: View {
                     }
                     .pickerStyle(.segmented)
 
+                    Toggle(isOn: $viewModel.usesPreprocessing) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("전처리")
+                            Text("목록 기호·요일을 바꾸고 알레르기 정보는 고정 번역을 씁니다")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
                     Button {
                         viewModel.translate()
                     } label: {

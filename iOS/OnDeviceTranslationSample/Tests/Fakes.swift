@@ -13,6 +13,7 @@ final class FakeProvider: TranslationProvider {
     var result: Result<String, Error>
     var delayNanoseconds: UInt64
     private(set) var translateCallCount = 0
+    private(set) var receivedTexts: [String] = []
 
     init(
         kind: ProviderKind,
@@ -35,6 +36,7 @@ final class FakeProvider: TranslationProvider {
 
     func translate(_ text: String, to target: TargetLanguage) async throws -> String {
         translateCallCount += 1
+        receivedTexts.append(text)
         if delayNanoseconds > 0 {
             try await Task.sleep(nanoseconds: delayNanoseconds)
         }
