@@ -50,3 +50,18 @@ func waitUntil(timeout: TimeInterval = 2, _ condition: () -> Bool) async {
         try? await Task.sleep(nanoseconds: 10_000_000)
     }
 }
+
+final class FakeMLKitManager: MLKitPackManaging {
+    var downloaded: Set<PackLanguage> = []
+    var deleteError: Error?
+    private(set) var downloadRequests: [PackLanguage] = []
+
+    func isDownloaded(_ language: PackLanguage) -> Bool { downloaded.contains(language) }
+
+    func download(_ language: PackLanguage) { downloadRequests.append(language) }
+
+    func delete(_ language: PackLanguage) async throws {
+        if let deleteError = deleteError { throw deleteError }
+        downloaded.remove(language)
+    }
+}
